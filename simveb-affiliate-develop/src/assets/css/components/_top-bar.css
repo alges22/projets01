@@ -1,0 +1,12 @@
+.top-bar {
+	height: 67px;
+	z-index: 51;
+	@apply flex items-center relative border-b border-slate-200;
+}
+
+.nav-default .nav-icon {
+	@apply text-gray-500
+}
+.nav-vivid .nav-icon{
+	@apply text-white
+}

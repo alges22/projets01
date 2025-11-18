@@ -1,0 +1,35 @@
+html {
+	&:has(.content.theme-default) {
+		background-color: #F3F5F8;
+	}
+	&:has(.content.theme-vivid) {
+		background-color: #EFEFEF;
+	}
+
+	&.dark {
+		@apply bg-darkmode-800;
+		body {
+			@apply text-slate-300;
+			*,
+			::before,
+			::after {
+				@apply border-white/5;
+			}
+		}
+	}
+	body {
+		@apply antialiased overflow-x-hidden font-montserrat text-sm;
+		&:has(.content.theme-default) {
+			@apply text-slate-800;
+		}
+		&:has(.content.theme-vivid) {
+			@apply font-semibold text-primary-dark;
+		}
+		@include media-breakpoint-down(md) {
+			@apply px-8;
+		}
+		@include media-breakpoint-down(sm) {
+			@apply px-3;
+		}
+	}
+}

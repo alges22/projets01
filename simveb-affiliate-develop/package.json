@@ -1,0 +1,130 @@
+{
+  "name": "simveb-affiliate",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "lint:prettier": "prettier --check \"./src/**/*.(ts|vue|css|scss)\"",
+    "lint:prettier:fix": "prettier --write \"./src/**/*.(ts|vue|css|scss)\"",
+    "lint:eslint": "eslint --ext .ts,.vue ./src",
+    "lint:eslint:fix": "eslint --fix --ext .ts,.vue ./src",
+    "lint": "lint:eslint:fix lint:prettier:fix",
+    "preview": "vite preview",
+    "prepare": "husky install",
+    "pre-commit": "lint-staged"
+  },
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.scss": [
+      "prettier --write"
+    ],
+    "*.md": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.vue": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@ckeditor/ckeditor5-build-balloon": "^29.1.0",
+    "@ckeditor/ckeditor5-build-balloon-block": "^29.1.0",
+    "@ckeditor/ckeditor5-build-classic": "^29.1.0",
+    "@ckeditor/ckeditor5-build-decoupled-document": "^29.1.0",
+    "@ckeditor/ckeditor5-build-inline": "^29.1.0",
+    "@fortawesome/fontawesome-pro": "^6.4.2",
+    "@fortawesome/fontawesome-svg-core": "^6.4.2",
+    "@fortawesome/free-brands-svg-icons": "^6.4.2",
+    "@fortawesome/pro-light-svg-icons": "^6.4.2",
+    "@fortawesome/pro-regular-svg-icons": "^6.4.2",
+    "@fortawesome/pro-solid-svg-icons": "^6.4.2",
+    "@fullcalendar/core": "^5.5.1",
+    "@fullcalendar/daygrid": "^5.5.0",
+    "@fullcalendar/interaction": "^5.5.0",
+    "@fullcalendar/list": "^5.5.0",
+    "@fullcalendar/timegrid": "^5.5.1",
+    "@headlessui/vue": "^1.7.19",
+    "@left4code/tw-starter": "^3.1.35",
+    "@popperjs/core": "^2.4.4",
+    "@sentry/vue": "^8.24.0",
+    "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
+    "@vueuse/core": "^10.7.2",
+    "axios": "^1.6.7",
+    "chart.js": "^3.7.1",
+    "dayjs": "^1.8.33",
+    "dropzone": "^5.7.2",
+    "highlight.js": "^10.6.0",
+    "js-beautify": "^1.11.0",
+    "js-cookie": "^3.0.5",
+    "litepicker": "^2.0.11",
+    "lucide": "^0.17.2",
+    "pinia": "^2.1.7",
+    "pristinejs": "^0.1.9",
+    "simplebar": "^5.3.6",
+    "sweetalert2": "^11.10.8",
+    "tabulator-tables": "^4.9.1",
+    "tiny-slider": "^2.9.3",
+    "tippy.js": "^6.2.7",
+    "toastify-js": "^1.9.0",
+    "tom-select": "^1.7.5",
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6",
+    "vue3-dayjs-plugin": "^1.0.2",
+    "webfontloader": "^1.0.0",
+    "xlsx": "^0.16.9",
+    "zoom-vanilla.js": "^2.0.6"
+  },
+  "devDependencies": {
+    "@rushstack/eslint-patch": "^1.1.4",
+    "@tailwindcss/forms": "^0.5.7",
+    "@vitejs/plugin-vue": "^4.0.0",
+    "@vue/cli-plugin-router": "~5.0.0",
+    "@vue/eslint-config-prettier": "^7.0.0",
+    "autoprefixer": "10.4.6",
+    "browser-sync": "^2.27.7",
+    "concurrently": "^7.0.0",
+    "eslint": "8.48.0",
+    "eslint-config-prettier": "9.0.0",
+    "eslint-plugin-frontmatter": "^0.0.8",
+    "eslint-plugin-md": "1.0.19",
+    "eslint-plugin-prettier": "5.0.0",
+    "eslint-plugin-prettier-vue": "^5.0.0",
+    "eslint-plugin-vue": "9.17.0",
+    "eslint-plugin-vuejs-accessibility": "^2.2.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^15.2.2",
+    "lodash": "^4.17.19",
+    "postcss": "^8.4.5",
+    "postcss-advanced-variables": "^3.0.1",
+    "postcss-cli": "^9.1.0",
+    "postcss-for": "^2.1.1",
+    "postcss-import": "^14.0.2",
+    "postcss-include": "^0.3.1",
+    "postcss-mixins": "^9.0.4",
+    "postcss-nested": "^6.0.1",
+    "postcss-nesting": "^12.1.2",
+    "prettier": "^2.7.1",
+    "resolve-url-loader": "^4.0.0",
+    "tailwindcss": "^3.0.24",
+    "vite": "^5.0.8",
+    "vite-plugin-mkcert": "^1.16.0"
+  },
+  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
+}

@@ -1,0 +1,108 @@
+.dashboard-card {
+	@apply bg-white p-4 rounded-2xl;
+}
+table th {
+	font-weight: 600 !important ;
+}
+.form-label {
+	font-weight: 600 !important;
+}
+.btn {
+	font-weight: 600 !important;
+}
+.icon-button {
+	@apply -intro-x flex items-center rounded-full bg-light p-3;
+}
+.btn-icon {
+	@apply w-8 h-full text-2xl;
+}
+.custom-checkbox-label {
+	@apply box cursor-pointer flex flex-row justify-between items-center border-2 rounded-lg border-2;
+	&:hover {
+		@apply bg-green-100;
+	}
+}
+.floating-icon {
+	@apply absolute h-5 w-5 items-center justify-center rounded-full bg-success text-white;
+}
+.floating-icon-danger {
+	@apply absolute h-5 w-5 items-center justify-center rounded-full bg-danger text-white;
+}
+.floating-text {
+	@apply absolute items-center justify-center;
+}
+.btn-outline-violet {
+	@apply outline outline-2 outline-violet-800 text-violet-800 hover:bg-violet-300;
+}
+.otp-code-input {
+	@apply w-full h-full flex font-bold text-xl flex-col items-center justify-center text-center px-5 outline-none rounded-md border-2 border-gray-200 bg-white focus:bg-gray-50 focus:ring-1 ring-blue-700;
+}
+.tab-button {
+	@apply p-4 text-center bg-[#F7F7F7] font-bold text-lg text-[#809FB8];
+	&.active {
+		@apply text-white bg-primary h-20;
+	}
+}
+.tab-link {
+	@apply font-bold text-lg text-[#809FB8];
+	&.active {
+		@apply text-primary;
+	}
+}
+.is-invalid {
+	@apply border-red-500;
+}
+.is-valid {
+	@apply border-green-500;
+}
+.invalid-feedback {
+	@apply text-red-500;
+}
+.valid-feedback {
+	@apply text-green-500;
+}
+
+.form-label.required::after {
+	content: "*";
+	color: red;
+	margin-left: 5px;
+}
+
+.modal.is-open {
+	opacity: 1;
+	visibility: visible;
+	z-index: 99;
+}
+.flex-center {
+	@apply flex items-center justify-center;
+}
+
+.modal {
+	&.flex-center {
+		.modal-dialog {
+			margin-top: 0 !important;
+		}
+	}
+}
+/* Style de la barre de défilement */
+.scroll-container::-webkit-scrollbar {
+	width: 0; /* Largeur de la barre de défilement */
+	height: 5px; /* Hauteur de la barre de défilement */
+}
+
+/* Style de la piste de la barre de défilement */
+.scroll-container::-webkit-scrollbar-track {
+	background: #f1f1f1; /* Couleur de la piste */
+	border-radius: 10px; /* Coins arrondis */
+}
+
+/* Style du pouce de la barre de défilement */
+.scroll-container::-webkit-scrollbar-thumb {
+	background: #888; /* Couleur du pouce */
+	border-radius: 10px; /* Coins arrondis */
+}
+
+/* Style du pouce de la barre de défilement lors du survol */
+.scroll-container::-webkit-scrollbar-thumb:hover {
+	background: #555; /* Couleur du pouce lors du survol */
+}

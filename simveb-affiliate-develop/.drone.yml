@@ -1,0 +1,17 @@
+kind: pipeline
+name: simveb-affiliate
+load:
+steps:
+  - name: deploy
+    image: node
+    environment:
+      GOOS: linux
+      DOKKU_HOST: "206.189.2.227"
+      DOKKU_PROJECT_NAME: "simveb-affiliate"
+      SSH_PRIVATE_KEY:
+        from_secret: SSH_PRIVATE_KEY
+    commands:
+      - sh ./.scripts/deploy.sh
+    when:
+      branch:
+        - staging
