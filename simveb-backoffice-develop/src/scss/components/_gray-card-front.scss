@@ -1,0 +1,53 @@
+.gray-card-front {
+	position: relative;
+	width: 390px;
+	height: 230px;
+	background-color: #e5e4e2;
+	border-radius: 7px;
+	box-shadow: 3px 3px 5px #c0c0c0;
+	font-family: var(--font);
+
+	div {
+		color: #000 !important;
+	}
+
+	.bg-image {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		opacity: 0.48;
+		padding: 40px 10px 30px;
+	}
+
+	.content {
+		position: absolute;
+		top: 0;
+		z-index: 2;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		justify-content: space-between;
+		flex-direction: column;
+		padding: 8px 5px;
+
+		.content-header {
+			display: flex;
+			flex-direction: column;
+			text-align: center;
+
+			.maintitle-text {
+				font-size: 19px;
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 1.5px;
+			}
+
+			.subtitle-text {
+				font-size: 10px;
+			}
+		}
+	}
+}

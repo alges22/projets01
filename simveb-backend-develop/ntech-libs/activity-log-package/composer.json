@@ -1,0 +1,31 @@
+{
+  "name": "ntech/activity-log-package",
+  "description": "ntech/activity-log-package est un module qui va permettre la gestion des logs activities",
+  "license": "MIT",
+  "version" : "1.0.0",
+  "authors": [
+    {
+      "name": "Arafath ATTA YAYA",
+      "email": "arafath@nautilus-technology.net"
+    }
+  ],
+  "require": {
+    "spatie/laravel-activitylog": "^4.7",
+    "ntech/users-package" : "1.0.0"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "psr-4": {
+      "Ntech\\ActivityLogPackage\\": "src/",
+      "Ntech\\ActivityLogPackage\\Database\\Seeds\\": "database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Ntech\\ActivityLogPackage\\Providers\\ActivityLogPackageServiceProvider"
+      ]
+    }
+  }
+}

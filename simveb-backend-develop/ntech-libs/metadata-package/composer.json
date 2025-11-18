@@ -1,0 +1,30 @@
+{
+    "name": "ntech/metadata-package",
+    "description": "ntech/metadata-package est un package dans lequel nous allons gérer les métadata",
+    "license": "MIT",
+    "version" : "1.0.0",
+    "authors": [
+        {
+            "name": "ATTA YAYA Arafath",
+            "email": "arafath@nautilus-technology.net"
+        }
+    ],
+    "require": {
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "Ntech\\MetadataPackage\\": "src/",
+            "Ntech\\MetadataPackage\\Database\\Seeds\\": "database/seeders/"
+
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ntech\\MetadataPackage\\Providers\\MetadataPackageServiceProvider"
+            ]
+        }
+    }
+}

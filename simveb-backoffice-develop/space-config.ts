@@ -1,0 +1,15 @@
+export default {
+	affiliate: import.meta.env.VITE_AFFILIATE_URL,
+	police: import.meta.env.VITE_POLICE_URL,
+	interpol: import.meta.env.VITE_INTERPOL_URL,
+	bank: import.meta.env.VITE_BANK_URL,
+	central_garage: import.meta.env.VITE_GC_URL,
+	distributor: import.meta.env.VITE_DISTR_URL,
+	auctioneer: import.meta.env.VITE_COMMISSAIRE_URL,
+	approved: import.meta.env.VITE_APPROVED_URL,
+	gma: import.meta.env.VITE_GMA_URL,
+	gmd: import.meta.env.VITE_GMD_URL,
+	court: import.meta.env.VITE_JUSTICE_URL,
+	user: import.meta.env.VITE_PORTAL_URL,
+	anatt: import.meta.env.VITE_ADMIN_URL,
+};

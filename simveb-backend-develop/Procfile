@@ -1,0 +1,3 @@
+web: vendor/bin/heroku-php-nginx -C nginx.conf -i php.ini public/
+worker: php artisan queue:work --timeout=60 --queue=hight,default,import,export
+cron: php artisan schedule:work

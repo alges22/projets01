@@ -1,0 +1,44 @@
+body {
+	font-size: var(--font-size);
+	font-family: var(--font);
+}
+
+label {
+	&.is-required {
+		&:after {
+			content: " *";
+			color: red;
+		}
+	}
+}
+
+.flex {
+	display: flex;
+}
+
+.card-inner .columns {
+	@apply border-b-2 border-dashed;
+
+	span {
+		font-size: 0.9rem;
+		color: var(--text-color);
+		font-weight: 600;
+	}
+
+	.column {
+		&:nth-child(2) {
+			justify-content: start;
+			span {
+				@apply font-bold text-blue-500;
+			}
+		}
+
+		small {
+			@apply text-sm;
+		}
+	}
+}
+
+.v-select ul {
+	z-index: 9999;
+}

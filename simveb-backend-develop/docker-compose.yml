@@ -1,0 +1,77 @@
+version: '3.8'
+
+networks:
+  app-network:
+
+volumes:
+  app-data:
+
+services:
+  webserver:
+    image: nginx:1.21.6-alpine
+    container_name: simveb_webserver
+    restart: unless-stopped
+    ports:
+      - "8004:80"
+    volumes:
+      - ./:/var/www
+      - .docker/nginx:/etc/nginx/conf.d
+    networks:
+      app-network:
+
+  app:
+    build:
+      context: .docker/php
+      dockerfile: dockerfile
+    container_name: simveb_backend_server
+    volumes:
+      - ./:/var/www
+      - .docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      app-network:
+  db:
+      image: postgres
+      container_name: simveb_db_server
+      restart: unless-stopped
+      environment:
+          POSTGRES_USER: ${DB_USERNAME}
+          POSTGRES_PASSWORD: ${DB_PASSWORD}
+          POSTGRES_DB: ${DB_DATABASE}
+          POSTGRES_HOST_AUTH_METHOD: "trust"
+          SERVICE_TAGS: devs
+          SERVICE_NAME: pgsql
+      volumes:
+          - ./docker/pgsql/init_db.sh:/var/lib/postgresql.d/init_db.sh
+      networks:
+          - app-network
+
+  test_db:
+      image: postgres
+      container_name: simveb_test_db_server
+      restart: unless-stopped
+      environment:
+          POSTGRES_USER: ${DB_USERNAME}
+          POSTGRES_PASSWORD: ${DB_PASSWORD}
+          POSTGRES_DB: ${DB_DATABASE}
+          POSTGRES_HOST_AUTH_METHOD: "trust"
+          SERVICE_TAGS: devs
+          SERVICE_NAME: pgsql
+      volumes:
+          - ./docker/pgsql/init_db.sh:/var/lib/postgresql.d/init_db.sh
+      networks:
+          - app-network
+
+     # image: mysql:8.0
+     # container_name: db_server
+     # restart: unless-stopped
+     # environment:
+     #     MYSQL_DATABASE: ${DB_DATABASE}
+     #     MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+     #     MYSQL_PASSWORD: ${DB_PASSWORD}
+     #     MYSQL_USER: ${DB_USERNAME}
+     #     SERVICE_TAGS: dev
+     #     SERVICE_NAME: mysql
+     # volumes:
+     #     - ./docker/mysql/mysql:/docker-entrypoint-initdb.d
+     # networks:
+     #     - app-network

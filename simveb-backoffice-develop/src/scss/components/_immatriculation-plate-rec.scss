@@ -1,0 +1,33 @@
+.immatriculation-plate-rec {
+	width: 335px;
+	height: 60px;
+	border: 3px solid black;
+	display: flex;
+	justify-content: space-evenly;
+	border-radius: 4px;
+	padding: 5px 20px;
+	font-family: var(--font);
+	font-size: 30px;
+	font-weight: 700;
+	text-transform: uppercase;
+
+	.plate-numbers {
+		margin-right: 8px;
+		.plate-number {
+			margin-left: 8px;
+		}
+	}
+
+	.plate-republic {
+		font-size: 20px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+
+		div:last-child {
+			span {
+				padding-left: 4px;
+			}
+		}
+	}
+}

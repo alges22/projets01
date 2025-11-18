@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" type="image/png" />
+    <link rel="alternate icon" href="/favicon.ico" type="image/png" sizes="16x16" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+    <link rel="mask-icon" href="/favicon.svg" color="#FFFFFF" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="msapplication-TileColor" content="#232326" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <!--
+      Here is basic SEO meta tags to enable social sharing and search engine indexing.
+    -->
+    <title>Simveb</title>
+
+    <link
+      rel="preload"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="/vendors/loader.css"
+    >
+    <script>
+      ;(function () {
+        const prefersDark =
+          window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        const setting = localStorage.getItem('color-schema') || 'auto'
+        if (setting === 'dark' || (prefersDark && setting !== 'light'))
+          document.documentElement.classList.toggle('is-dark', true)
+      })()
+    </script>
+  </head>
+  <body>
+    <!--
+      this is a placeholder for Teleport's vue feature
+
+      @see /src/pages/navbar/dashboards/influencer.vue
+      @see /src/pages/sidebar/dashboards/influencer.vue
+    -->
+    <div data-teleport-bg></div>
+
+    <div id="app" class="app-wrapper">
+      <div id="inital-container">
+        <div class="spinner">
+        </div>
+        <div class="text-appname">Simveb</div>
+      </div>
+    </div>
+    <script type="module" src="/src/entry-client.ts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  </body>
+</html>

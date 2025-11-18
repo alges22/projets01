@@ -1,0 +1,313 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Validation Language Lines
+|--------------------------------------------------------------------------
+|
+| The following language lines contain the default error messages used by
+| the validator class. Some of these rules have multiple versions such
+| as the size rules. Feel free to tweak each of these messages here.
+|
+*/
+
+return [
+    'accepted'             => 'Le champ :attribute doit être accepté.',
+    'active_url'           => 'Le champ :attribute n\'est pas une URL valide.',
+    'after'                => 'Le champ :attribute doit être une date postérieure au :date.',
+    'after_or_equal'       => 'Le champ :attribute doit être une date postérieure ou égale au :date.',
+    'alpha'                => 'Le champ :attribute doit contenir uniquement des lettres.',
+    'alpha_dash'           => 'Le champ :attribute doit contenir uniquement des lettres, des chiffres et des tirets.',
+    'alpha_num'            => 'Le champ :attribute doit contenir uniquement des chiffres et des lettres.',
+    'array'                => 'Le champ :attribute doit être un tableau.',
+    'attached'             => ':attribute est déjà attaché(e).',
+    'before'               => 'Le champ :attribute doit être une date antérieure au :date.',
+    'before_or_equal'      => 'Le champ :attribute doit être une date antérieure ou égale au :date.',
+    'between'              => [
+        'array'   => 'Le tableau :attribute doit contenir entre :min et :max éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être comprise entre :min et :max kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être comprise entre :min et :max.',
+        'string'  => 'Le texte :attribute doit contenir entre :min et :max caractères.',
+    ],
+    'boolean'              => 'Le champ :attribute doit être vrai ou faux.',
+    'confirmed'            => 'Le champ de confirmation :attribute ne correspond pas.',
+    'current_password'     => 'Le mot de passe est incorrect.',
+    'date'                 => 'Le champ :attribute n\'est pas une date valide.',
+    'date_equals'          => 'Le champ :attribute doit être une date égale à :date.',
+    'date_format'          => 'Le champ :attribute ne correspond pas au format :format.',
+    'different'            => 'Les champs :attribute et :other doivent être différents.',
+    'digits'               => 'Le champ :attribute doit contenir :digits chiffres.',
+    'digits_between'       => 'Le champ :attribute doit contenir entre :min et :max chiffres.',
+    'dimensions'           => 'La taille de l\'image :attribute n\'est pas conforme.',
+    'distinct'             => 'Le champ :attribute a une valeur en double.',
+    'email'                => 'Le champ :attribute doit être une adresse email valide.',
+    'ends_with'            => 'Le champ :attribute doit se terminer par une des valeurs suivantes : :values',
+    'exists'               => 'Le champ :attribute sélectionné est invalide.',
+    'file'                 => 'Le champ :attribute doit être un fichier.',
+    'filled'               => 'Le champ :attribute doit avoir une valeur.',
+    'gt'                   => [
+        'array'   => 'Le tableau :attribute doit contenir plus de :value éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être supérieure à :value kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être supérieure à :value.',
+        'string'  => 'Le texte :attribute doit contenir plus de :value caractères.',
+    ],
+    'gte'                  => [
+        'array'   => 'Le tableau :attribute doit contenir au moins :value éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être supérieure ou égale à :value kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être supérieure ou égale à :value.',
+        'string'  => 'Le texte :attribute doit contenir au moins :value caractères.',
+    ],
+    'image'                => 'Le champ :attribute doit être une image.',
+    'in'                   => 'Le champ :attribute est invalide.',
+    'in_array'             => 'Le champ :attribute n\'existe pas dans :other.',
+    'integer'              => 'Le champ :attribute doit être un entier.',
+    'ip'                   => 'Le champ :attribute doit être une adresse IP valide.',
+    'ipv4'                 => 'Le champ :attribute doit être une adresse IPv4 valide.',
+    'ipv6'                 => 'Le champ :attribute doit être une adresse IPv6 valide.',
+    'json'                 => 'Le champ :attribute doit être un document JSON valide.',
+    'lt'                   => [
+        'array'   => 'Le tableau :attribute doit contenir moins de :value éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être inférieure à :value kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être inférieure à :value.',
+        'string'  => 'Le texte :attribute doit contenir moins de :value caractères.',
+    ],
+    'lte'                  => [
+        'array'   => 'Le tableau :attribute doit contenir au plus :value éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être inférieure ou égale à :value kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être inférieure ou égale à :value.',
+        'string'  => 'Le texte :attribute doit contenir au plus :value caractères.',
+    ],
+    'max'                  => [
+        'array'   => 'Le tableau :attribute ne peut contenir plus de :max éléments.',
+        'file'    => 'La taille du fichier de :attribute ne peut pas dépasser :max kilo-octets.',
+        'numeric' => 'La valeur de :attribute ne peut être supérieure à :max.',
+        'string'  => 'Le texte de :attribute ne peut contenir plus de :max caractères.',
+    ],
+    'mimes'                => 'Le champ :attribute doit être un fichier de type : :values.',
+    'mimetypes'            => 'Le champ :attribute doit être un fichier de type : :values.',
+    'min'                  => [
+        'array'   => 'Le tableau :attribute doit contenir au moins :min éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être supérieure à :min kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être supérieure ou égale à :min.',
+        'string'  => 'Le texte :attribute doit contenir au moins :min caractères.',
+    ],
+    'multiple_of'          => 'La valeur de :attribute doit être un multiple de :value',
+    'not_in'               => 'Le champ :attribute sélectionné n\'est pas valide.',
+    'not_regex'            => 'Le format du champ :attribute n\'est pas valide.',
+    'numeric'              => 'Le champ :attribute doit contenir un nombre.',
+    'password'             => 'Le mot de passe est incorrect',
+    'present'              => 'Le champ :attribute doit être présent.',
+    'prohibited'           => 'Le champ :attribute est interdit.',
+    'prohibited_if'        => 'Le champ :attribute est interdit quand :other a la valeur :value.',
+    'prohibited_unless'    => 'Le champ :attribute est interdit à moins que :other est l\'une des valeurs :values.',
+    'regex'                => 'Le format du champ :attribute est invalide.',
+    'relatable'            => ':attribute n\'est sans doute pas associé(e) avec cette donnée.',
+    'required'             => 'Le champ :attribute est obligatoire.',
+    'required_if'          => 'Le champ :attribute est obligatoire quand la valeur de :other est :value.',
+    'required_unless'      => 'Le champ :attribute est obligatoire sauf si :other est :values.',
+    'required_with'        => 'Le champ :attribute est obligatoire quand :values est présent.',
+    'required_with_all'    => 'Le champ :attribute est obligatoire quand :values sont présents.',
+    'required_without'     => 'Le champ :attribute est obligatoire quand :values n\'est pas présent.',
+    'required_without_all' => 'Le champ :attribute est requis quand aucun de :values n\'est présent.',
+    'same'                 => 'Les champs :attribute et :other doivent être identiques.',
+    'size'                 => [
+        'array'   => 'Le tableau :attribute doit contenir :size éléments.',
+        'file'    => 'La taille du fichier de :attribute doit être de :size kilo-octets.',
+        'numeric' => 'La valeur de :attribute doit être :size.',
+        'string'  => 'Le texte de :attribute doit contenir :size caractères.',
+    ],
+    'starts_with'          => 'Le champ :attribute doit commencer avec une des valeurs suivantes : :values',
+    'string'               => 'Le champ :attribute doit être une chaîne de caractères.',
+    'timezone'             => 'Le champ :attribute doit être un fuseau horaire valide.',
+    'unique'               => 'La valeur du champ :attribute est déjà utilisée.',
+    'uploaded'             => 'Le fichier du champ :attribute n\'a pu être téléversé.',
+    'url'                  => 'Le format de l\'URL de :attribute n\'est pas valide.',
+    'uuid'                 => 'Le champ :attribute doit être un UUID valide',
+    'custom'               => [
+        'attribute-name' => [
+            'rule-name' => 'custom-message',
+        ],
+    ],
+    'attributes'           => [
+        'address'               => 'adresse',
+        'age'                   => 'âge',
+        'available'             => 'disponible',
+        'city'                  => 'ville',
+        'content'               => 'contenu',
+        'country'               => 'pays',
+        'current_password'      => 'mot de passe actuel',
+        'date'                  => 'date',
+        'day'                   => 'jour',
+        'description'           => 'description',
+        'email'                 => 'adresse email',
+        'excerpt'               => 'extrait',
+        'first_name'            => 'prénom',
+        'gender'                => 'genre',
+        'hour'                  => 'heure',
+        'last_name'             => 'nom',
+        'minute'                => 'minute',
+        'mobile'                => 'portable',
+        'month'                 => 'mois',
+        'name'                  => 'nom',
+        'password'              => 'mot de passe',
+        'password_confirmation' => 'confirmation du mot de passe',
+        'phone'                 => 'téléphone',
+        'second'                => 'seconde',
+        'sex'                   => 'sexe',
+        'size'                  => 'taille',
+        'time'                  => 'heure',
+        'title'                 => 'titre',
+        'username'              => 'nom d\'utilisateur',
+        'year'                  => 'année',
+        'ws_login'              => 'identifiant',
+        'ws_password'           => 'mot de passe',
+        'ws_login'              => 'identifiant',
+        'status'                => 'état',
+
+        'step' => "étape",
+        'institution_fullname' => "nom complet de l'institution",
+        'institution_cigle' =>  "cigle de l'insitution",
+        'organization_type' => "type d'organisation",
+        'institution_creation_date' =>  "date de création de l'institution",
+        'agreement_number' => "numéro de l'agrément",
+        'identification_number' => "numéro d'identification",
+        'leaders' => "dirigeants",
+        'employees' => "employées",
+        'number_of_beneficiary_groups_of_individuals' => "nombre total de groupements de personnes physiques bénéficiaires",
+        'number_of_male_individuals_not_members_of_a_group' => "nombre total de personnes physiques hommes non-membres d'un groupement",
+        'number_of_female_individuals_not_members_of_a_group' => "nombre total de personnes physiques femmes non-membres d'un groupement",
+        'number_of_members_of_the_board_of_directors' => "nombre de membres du conseil d'administration ou l'organe équivalent",
+        'number_of_members_of_the_supervisory_board' => "nombre de membres du conseil de surveillance",
+        'number_of_credit_committee_members' => "nombre de membres du comité de crédit",
+        'number_of_agencies' => "Nombre de guichets ou d'antennes ou d'agences",
+        'number_of_active_accounts' => "nombre total de comptes actifs",
+        'number_of_inactive_accounts' => "nombre total de comptes inactifs",
+        'current_sig_name' => "nom du SIG utilisé",
+        'current_sig_editor' => "nom de l'éditeur du SIG utilisé",
+        'amount_of_deposits_for_the_past_year' => "montant total des dépôts de l'annee ecoulee",
+        'amount_of_withdrawals_for_the_past_year' => "montant total des retraits de l'annee ecoulee",
+        'amount_of_capital' => "montant total du capital",
+        'number_of_deposits' => "nombre total des dépôts",
+        'number_of_withdrawals_from_accounts' => "nombre total des retraits sur comptes",
+        'net_margin_rate' => "taux de marge net",
+        'pricing_id' => "identifiant du forfait",
+        'identity_cards' => "cartes d'identités",
+        'use_default_domain' => "domaine par défaut",
+        'institution_domain' => "domaine de l'institution",
+        'validate' => "valider",
+
+
+        'criteria' => "critères",
+        'criterion' => "critère",
+
+    ],
+
+    'custom' => [
+        'leaders' => [
+            'firstname' => [
+                'required' => "Le champ :field est obligatoire",
+                'regex' => "Le champ :field est invalide",
+                'min' => "Le champ :field doit contenir au moins :min caractères",
+            ],
+            'lastname' => [
+                'required' => "Le champ :field est obligatoire",
+                'regex' => "Le champ :field est invalide",
+                'min' => "Le champ :field doit contenir au moins :min caractères",
+            ],
+            'telephone_1' => [
+                'required' => "Le champ :field est obligatoire",
+                'digits' => "Le champ :field doit contenir :digits chiffres",
+            ],
+            'telephone_2' => [
+                'required' => "Le champ :field est obligatoire",
+                'digits' => "Le champ :field doit contenir :digits chiffres",
+                'different' => "Le champ :field être différent du téléphone 1",
+            ],
+            'email' => [
+                'required' => "Le champ :field est obligatoire",
+                'email' => "Le champ :field doit être un email",
+            ],
+            'email_pro' => [
+                'required' => "Le champ :field est obligatoire",
+                'email' => "Le champ :field doit être un email",
+                'different' => "Le champ :field doit être différent de l'email",
+            ],
+            'id' => [
+                'exists' => "Le champ :field n'existe pas",
+            ],
+        ],
+        'employees' => [
+            'firstname' => [
+                'required' => "Le champ :field est obligatoire",
+                'regex' => "Le champ :field est invalide",
+                'min' => "Le champ :field doit contenir au moins :min caractères",
+            ],
+            'lastname' => [
+                'required' => "Le champ :field est obligatoire",
+                'regex' => "Le champ :field est invalide",
+                'min' => "Le champ :field doit contenir au moins :min caractères",
+            ],
+            'telephone_1' => [
+                'required' => "Le champ :field est obligatoire",
+                'digits' => "Le champ :field doit contenir :digits chiffres",
+            ],
+            'telephone_2' => [
+                'required' => "Le champ :field est obligatoire",
+                'digits' => "Le champ :field doit contenir :digits chiffres",
+                'different' => "Le champ :field être différent du téléphone 1",
+            ],
+            'email' => [
+                'required' => "Le champ :field est obligatoire",
+                'email' => "Le champ :field doit être un email",
+            ],
+            'email_pro' => [
+                'required' => "Le champ :field est obligatoire",
+                'email' => "Le champ :field doit être un email",
+                'different' => "Le champ :field doit être différent de l'email",
+            ],
+            'id' => [
+                'exists' => "Le champ :field n'existe pas",
+            ],
+        ],
+        'documents' => [
+            'type' => [
+                'required' => "Le champ :field est obligatoire",
+                'exists' => "Ce :field n'existe pas",
+            ],
+            'file' => [
+                'required' => "Le champ :field est obligatoire",
+                'file' => "Le champ :field doit être un fichier",
+                'mimes' => "Le champ :field doit être un fichier de type :mimes",
+            ],
+        ],
+        'identity_cards' => [
+
+        ],
+
+        'criteria' => [
+            'id' => [
+                'required' => "Le champ :field est obligatoire",
+                'exists' => "Le :field n'existe pas",
+            ],
+            'period' => [
+                'required' => "Le champ :field est obligatoire",
+                'string' => "Le :field doit être une chaine de caractère",
+            ],
+            'nb_period' => [
+                'required' => "Le champ :field est obligatoire",
+                'integer' => "Le :field doit être un entier",
+            ],
+            'value' => [
+                'numeric' => "Le champ :field doit être numérique",
+                'string' => "Le champ :field doit être une chaine de caractère",
+            ],
+            'quantity_min' => [
+                'numeric' => "Le champ :field doit être un entier",
+            ],
+            'quantity_max' => [
+                'numeric' => "Le champ :field doit être un entier",
+                'gt' => "Le champ :field doit être plus grand que la valeur minimum",
+            ],
+        ],
+    ],
+];

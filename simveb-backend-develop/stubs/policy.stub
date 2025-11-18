@@ -1,0 +1,117 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Auth\Access\HandlesAuthorization;
+use {{ namespacedModel }};
+use {{ namespacedUserModel }};
+use Illuminate\Support\Str;
+
+class {{ class }}
+{
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any models.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function viewAny({{ user }} $user)
+    {
+        return $user->onlineProfile->hasPermissionTo('browse-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @param  \{{ namespacedModel }}  ${{ modelVariable }}
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function view({{ user }} $user, {{ model }} ${{ modelVariable }})
+    {
+        return $user->onlineProfile->hasPermissionTo('show-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function create({{ user }} $user)
+    {
+        return $user->onlineProfile->hasPermissionTo('store-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @param  \{{ namespacedModel }}  ${{ modelVariable }}
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function update({{ user }} $user, {{ model }} ${{ modelVariable }})
+    {
+        return $user->onlineProfile->hasPermissionTo('update-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @param  \{{ namespacedModel }}  ${{ modelVariable }}
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function delete({{ user }} $user, {{ model }} ${{ modelVariable }})
+    {
+        return $user->onlineProfile->hasPermissionTo('delete-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function validate({{ user }} $user)
+    {
+        return $user->onlineProfile->hasPermissionTo('validate-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function reject({{ user }} $user)
+    {
+        return $user->onlineProfile->hasPermissionTo('reject-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @param  \{{ namespacedModel }}  ${{ modelVariable }}
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function restore({{ user }} $user, {{ model }} ${{ modelVariable }})
+    {
+        return $user->onlineProfile->hasPermissionTo('restore-' . Str::kebab('{{ model }}'));
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     *
+     * @param  \{{ namespacedUserModel }}  $user
+     * @param  \{{ namespacedModel }}  ${{ modelVariable }}
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function forceDelete({{ user }} $user, {{ model }} ${{ modelVariable }})
+    {
+        return $user->onlineProfile->hasPermissionTo('force-delete-' . Str::kebab('{{ model }}'));
+    }
+}

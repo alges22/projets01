@@ -1,0 +1,31 @@
+{
+  "name": "ntech/users-package",
+  "description": "ntech/users-package est un module qui va permettre la gestion des utilisateurs du système ainsi que leurs rôles (droits et permissions)",
+  "license": "MIT",
+  "version" : "1.0.0",
+  "authors": [
+    {
+      "name": "ATTA YAYA Arafath",
+      "email": "arafath@nautilus-technology.net"
+    }
+  ],
+  "require": {
+    "spatie/laravel-permission": "^5.7",
+    "laravel/passport": "^11.3"
+  },
+  "require-dev": {
+  },
+  "autoload": {
+    "psr-4": {
+      "Ntech\\UserPackage\\": "src/",
+      "Ntech\\UserPackage\\Database\\Seeders\\": "database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Ntech\\UserPackage\\Providers\\UserPackageServiceProvider"
+      ]
+    }
+  }
+}

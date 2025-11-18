@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply text-responsive-base;
+    }
+
+    h1 {
+        @apply text-responsive-lg;
+    }
+
+    h2 {
+        @apply text-responsive-lg;
+    }
+
+    p {
+        @apply text-responsive-base;
+    }
+}
+
+.btn-account{
+    @apply bg-blue-900 text-white font-semibold py-2 px-4 border border-blue-900 rounded shadow text-xl
+}
+
+.btn-primary{
+    @apply bg-blue-900 text-white font-semibold py-4 px-8 border border-blue-900 rounded shadow text-2xl
+}
+
+.btn-blue{
+    @apply bg-blue-500 text-white font-semibold py-4 px-8 mt-8 border border-blue-500 rounded shadow text-2xl
+}
+
+.btn-red{
+    @apply bg-red-500 text-white font-semibold py-4 px-8 border border-red-500 rounded shadow text-2xl
+}
+
+.btn-sm{
+    @apply text-xs px-4 py-2
+}
+
+.btn-blue:disabled {
+    opacity: 0.5; /* Adjust opacity to visually indicate the button is disabled */
+    pointer-events: none; /* Disable pointer events */
+}
+
+.btn-red:disabled {
+    opacity: 0.5; /* Adjust opacity to visually indicate the button is disabled */
+    pointer-events: none; /* Disable pointer events */
+}
+
+.btn-outline-primary{
+    @apply bg-white text-blue-950 font-semibold py-4 px-8 mt-8 border border-blue-900 rounded shadow
+}
+
+.btn-outline-blue{
+    @apply text-blue-500 font-semibold py-4 px-8 mt-8 border-2 border-blue-500 rounded shadow
+}
+
+.btn-outline-blue:disabled {
+    opacity: 0.5; /* Adjust opacity to visually indicate the button is disabled */
+    pointer-events: none; /* Disable pointer events */
+}
+
+.btn-outline-primary:hover{
+    @apply bg-blue-900 text-white
+}
+
+.btn-primary:hover{
+    @apply bg-blue-950
+}
+
+.btn-primary:disabled{
+    background-color: #0e1c38;
+}
+
+.form-control{
+    @apply mt-3 block w-full px-4 py-4 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 text-lg
+}
+
+.form-control:focus{
+    @apply border-sky-500 ring-1 ring-sky-500 outline-none
+}
+
+.form-control.active{
+    @apply border-sky-500 text-sky-500 ring-1 ring-sky-500 outline-none
+}
+
+.form-control:disabled{
+    @apply bg-slate-50 text-slate-500 border-slate-200 shadow-none
+}
+
+.form-control:invalid{
+    @apply border-pink-500 text-pink-600
+}
+
+.form-control:focus:invalid{
+    @apply border-pink-500 ring-pink-500
+}
+
+.card{
+    @apply bg-white shadow-md overflow-hidden rounded-lg
+}
+
+.card-wo-bg{
+    @apply shadow-md overflow-hidden rounded-lg
+}
+
+.text-title{
+    @apply text-2xl text-blue-900 font-bold
+}
+
+.text-primary{
+    @apply text-blue-900
+}
+
+.text-blue{
+    @apply text-blue-500
+}
+
+
+.table-black{
+    @apply text-left w-full
+}
+
+.table-black td,
+.table-black th {
+    @apply pt-4 pb-2 border-b-2 border-gray-100
+}
+
+.table{
+    @apply text-blue-900 text-left w-full
+}
+
+.table td,
+.table th {
+    @apply pt-4 pb-2 border-b-2 border-gray-100
+}
+
+.form-invalid{
+    @apply text-sm text-red-600 py-2
+}
+
+.form-invalid-lg{
+    @apply text-lg text-red-600 px-4 py-2
+}
+
+.form-status-step.active{
+    @apply card-wo-bg shadow py-16 text-center font-bold text-green-600 bg-green-200
+}
+
+.form-status-step.current{
+    @apply card-wo-bg shadow py-16 text-center font-bold text-yellow-600 bg-yellow-200
+}
+
+.form-status-step{
+    @apply card-wo-bg shadow py-16 text-center text-blue-600 font-bold
+}
+
+
+@media screen and (min-width: 820px){
+    ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+}
+
+@media screen and (max-width: 820px){
+    ::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+    }
+}
+
+::-webkit-scrollbar-button {
+    width: 0px;
+    height: 0px;
+}
+
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.5);
+    border: 31px none #ffffff;
+    border-radius: 5px;
+}
+
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.7);
+}
+
+
+::-webkit-scrollbar-thumb:active {
+    background: rgba(0,0,0,0.7);;
+}
+
+
+::-webkit-scrollbar-track {
+    background: #f0f0f0;
+    border: 1px solid #ffffff;
+    border-radius: 5px;
+}
+
+
+::-webkit-scrollbar-track:hover {
+    background: #f2f2f2;
+}
+
+
+::-webkit-scrollbar-track:active {
+    background: #f5f5f5;
+}
+
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/*Fin de la personnalisation */

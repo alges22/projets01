@@ -1,0 +1,27 @@
+{
+    "name": "ntech/notifier-package",
+    "description": "Gestion des notifications vers plusieurs canaux avec Novu.",
+    "license": "MIT",
+    "version" : "1.0.0",
+    "authors": [
+        {
+            "name": "HOUESSINON Booby Orphé",
+            "email": "bobby@nautilus-technology.net"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Ntech\\NotifierPackage\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ntech\\NotifierPackage\\Providers\\NotifierPackageServiceProvider"
+            ]
+        }
+    }
+}

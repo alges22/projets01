@@ -1,0 +1,134 @@
+{
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The Laravel Framework.",
+    "keywords": ["framework", "laravel"],
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2.0 <8.4.0",
+        "barryvdh/laravel-dompdf": "^2.1",
+        "barryvdh/laravel-snappy": "^1.0",
+        "bmatovu/laravel-xml": "^4.0",
+        "fakerphp/faker": "^1.23.1",
+        "fedapay/fedapay-php": "^0.4.0",
+        "giggsey/libphonenumber-for-php": "^8.13",
+        "guzzlehttp/guzzle": "^7.7",
+        "h4cc/wkhtmltoimage-amd64": "0.12.x",
+        "h4cc/wkhtmltopdf-amd64": "0.12.x",
+        "kkiapay/kkiapay-php": "dev-master",
+        "l3aro/pipeline-query-collection": "^1.3",
+        "laravel/framework": "^10.10",
+        "laravel/pail": "^1.1",
+        "laravel/sanctum": "^3.2",
+        "laravel/telescope": "^4.16",
+        "laravel/tinker": "^2.8",
+        "laravel/vonage-notification-channel": "^3.2",
+        "maatwebsite/excel": "^3.1",
+        "novu/novu-laravel": "^1.3",
+        "ntech/activity-log-package": "1.0.0",
+        "ntech/metadata-package": "1.0.0",
+        "ntech/notifier-package": "1.0.0",
+        "ntech/required-document-package": "1.0.0",
+        "ntech/users-package": "1.0.0",
+        "phpoffice/phpspreadsheet": "^1.29",
+        "predis/predis": "^2.2",
+        "sentry/sentry-laravel": "^3.8",
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "spatie/laravel-pdf": "^1.1"
+    },
+    "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.0",
+        "laravel/pint": "^1.0",
+        "laravel/sail": "^1.18",
+        "mockery/mockery": "^1.4.4",
+        "nunomaduro/collision": "^7.0",
+        "pestphp/pest": "^2.35",
+        "pestphp/pest-plugin-laravel": "^2.4",
+        "spatie/laravel-ignition": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        },
+        "files": [
+            "app/Helpers/Helpers.php",
+            "app/Helpers/DemandHelper.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "ntech-libs/metadata-package/",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "ntech-libs/users-package/",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "ntech-libs/activity-log-package/",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "ntech-libs/required-document-package/",
+            "options": {
+                "symlink": true
+            }
+        },
+        {
+            "type": "path",
+            "url": "ntech-libs/notifier-package/",
+            "options": {
+                "symlink": true
+            }
+        }
+    ]
+
+}

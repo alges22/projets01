@@ -1,0 +1,29 @@
+{
+    "name": "ntech/required-document-package",
+    "description": "ntech/required-document-package est un package dans lequel nous allons gérer les documents requis",
+    "license": "MIT",
+    "version" : "1.0.0",
+    "authors": [
+        {
+            "name": "HOUESSINON Booby Orphé",
+            "email": "bobby@nautilus-technology.net"
+        }
+    ],
+    "require": {
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "Ntech\\RequiredDocumentPackage\\": "src/",
+            "Ntech\\RequiredDocumentPackage\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ntech\\RequiredDocumentPackage\\Providers\\RequiredDocumentPackageServiceProvider"
+            ]
+        }
+    }
+}

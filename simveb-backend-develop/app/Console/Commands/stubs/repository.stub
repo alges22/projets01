@@ -1,0 +1,14 @@
+<?php
+
+namespace App\Repositories;
+
+use [model_namespace]; [comment_namespace_when_no_model]
+use App\Repositories\Crud\AbstractCrudRepository;
+
+class DummyClass extends AbstractCrudRepository
+{
+    public function __construct()
+    {
+      parent::__construct([model]::class);
+    }
+}
