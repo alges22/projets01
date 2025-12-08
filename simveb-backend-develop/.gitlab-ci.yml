@@ -1,0 +1,376 @@
+# GitLab CI/CD Pipeline pour SIMVEB Backend (Laravel)
+# Author: DevOps Team
+# Description: Pipeline complet pour build, test, et déploiement du backend Laravel
+
+variables:
+  # Docker
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE/backend
+
+  # PostgreSQL pour tests
+  POSTGRES_DB: simveb_test
+  POSTGRES_USER: simveb
+  POSTGRES_PASSWORD: secret
+  POSTGRES_HOST_AUTH_METHOD: trust
+
+  # Laravel
+  APP_ENV: testing
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: simveb_test
+  DB_USERNAME: simveb
+  DB_PASSWORD: secret
+
+# Définition des stages
+stages:
+  - prepare
+  - build
+  - test
+  - security
+  - docker
+  - deploy
+
+# Cache pour optimiser les builds
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - vendor/
+    - node_modules/
+    - .composer-cache/
+
+# Anchors pour réutilisation
+.php_base:
+  image: php:8.2-fpm
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq git curl libpq-dev libzip-dev zip unzip
+    - docker-php-ext-install pdo_pgsql pgsql zip bcmath
+    - curl -sS https://getcomposer.org/installer | php
+    - mv composer.phar /usr/local/bin/composer
+    - composer config --global cache-dir "$(pwd)/.composer-cache"
+
+.docker_base:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login $CI_REGISTRY -u $CI_REGISTRY_USER --password-stdin
+
+# ===================================
+# STAGE: PREPARE
+# ===================================
+
+composer:install:
+  extends: .php_base
+  stage: prepare
+  script:
+    - composer install --prefer-dist --no-ansi --no-interaction --no-progress --optimize-autoloader
+  artifacts:
+    paths:
+      - vendor/
+    expire_in: 1 day
+  only:
+    - branches
+    - merge_requests
+    - tags
+
+# ===================================
+# STAGE: BUILD
+# ===================================
+
+build:assets:
+  extends: .php_base
+  stage: build
+  dependencies:
+    - composer:install
+  script:
+    - echo "Building Laravel assets..."
+    - php artisan config:cache
+    - php artisan route:cache
+    - php artisan view:cache
+  artifacts:
+    paths:
+      - bootstrap/cache/
+    expire_in: 1 day
+  only:
+    - branches
+    - merge_requests
+    - tags
+
+# ===================================
+# STAGE: TEST
+# ===================================
+
+phpunit:tests:
+  extends: .php_base
+  stage: test
+  services:
+    - postgres:15-alpine
+  dependencies:
+    - composer:install
+  script:
+    - cp .env.example .env
+    - php artisan key:generate
+    - php artisan config:clear
+    - php artisan migrate --force
+    - php artisan db:seed --force
+    - vendor/bin/phpunit --coverage-text --colors=never
+  coverage: '/^\s*Lines:\s*\d+.\d+\%/'
+  artifacts:
+    reports:
+      junit: reports/phpunit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - reports/
+    expire_in: 30 days
+  only:
+    - branches
+    - merge_requests
+
+pest:tests:
+  extends: .php_base
+  stage: test
+  services:
+    - postgres:15-alpine
+  dependencies:
+    - composer:install
+  script:
+    - cp .env.example .env
+    - php artisan key:generate
+    - php artisan config:clear
+    - php artisan migrate --force
+    - |
+      if [ -f "vendor/bin/pest" ]; then
+        vendor/bin/pest --coverage --coverage-clover coverage.xml
+      else
+        echo "Pest not installed, skipping..."
+      fi
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+
+lint:phpcs:
+  extends: .php_base
+  stage: test
+  dependencies:
+    - composer:install
+  script:
+    - |
+      if [ -f "vendor/bin/phpcs" ]; then
+        vendor/bin/phpcs --standard=PSR12 app/
+      else
+        echo "PHPCS not installed, installing..."
+        composer require --dev squizlabs/php_codesniffer
+        vendor/bin/phpcs --standard=PSR12 app/
+      fi
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+
+lint:phpstan:
+  extends: .php_base
+  stage: test
+  dependencies:
+    - composer:install
+  script:
+    - |
+      if [ -f "vendor/bin/phpstan" ]; then
+        vendor/bin/phpstan analyse app/ --level=5
+      else
+        echo "PHPStan not installed, skipping..."
+      fi
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+
+# ===================================
+# STAGE: SECURITY
+# ===================================
+
+security:composer:
+  extends: .php_base
+  stage: security
+  dependencies:
+    - composer:install
+  script:
+    - composer audit --format=json || true
+    - echo "Checking for known security vulnerabilities..."
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+    - tags
+
+security:sast:
+  stage: security
+  image: registry.gitlab.com/security-products/semgrep
+  script:
+    - semgrep --config=auto --json --output=gl-sast-report.json || true
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
+    expire_in: 30 days
+  allow_failure: true
+  only:
+    - branches
+    - merge_requests
+
+# ===================================
+# STAGE: DOCKER
+# ===================================
+
+docker:build:
+  extends: .docker_base
+  stage: docker
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        TAG="latest"
+      elif [[ "$CI_COMMIT_TAG" ]]; then
+        TAG="$CI_COMMIT_TAG"
+      else
+        TAG="$CI_COMMIT_SHORT_SHA"
+      fi
+    - echo "Building Docker image with tag: $TAG"
+    - docker build -f .docker/php/dockerfile -t $DOCKER_IMAGE:$TAG .
+    - docker tag $DOCKER_IMAGE:$TAG $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $DOCKER_IMAGE:$TAG
+    - docker push $DOCKER_IMAGE:$CI_COMMIT_SHORT_SHA
+  only:
+    - branches
+    - tags
+  except:
+    - merge_requests
+
+docker:build:nginx:
+  extends: .docker_base
+  stage: docker
+  script:
+    - |
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+        TAG="latest"
+      else
+        TAG="$CI_COMMIT_SHORT_SHA"
+      fi
+    - echo "Building Nginx image with tag: $TAG"
+    - |
+      cat > Dockerfile.nginx <<'EOF'
+      FROM nginx:1.21.6-alpine
+      COPY .docker/nginx /etc/nginx/conf.d
+      COPY public /var/www/public
+      EOF
+    - docker build -f Dockerfile.nginx -t $DOCKER_IMAGE-nginx:$TAG .
+    - docker push $DOCKER_IMAGE-nginx:$TAG
+  only:
+    - branches
+    - tags
+  except:
+    - merge_requests
+
+# ===================================
+# STAGE: DEPLOY
+# ===================================
+
+.deploy_base:
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client curl
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
+
+deploy:development:
+  extends: .deploy_base
+  stage: deploy
+  environment:
+    name: development
+    url: https://dev-api.simveb-bj.com
+  script:
+    - echo "Deploying to DEVELOPMENT environment..."
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/simveb-backend && docker-compose pull && docker-compose up -d"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/simveb-backend && docker-compose exec -T app php artisan migrate --force"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/simveb-backend && docker-compose exec -T app php artisan config:cache"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/simveb-backend && docker-compose exec -T app php artisan route:cache"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /var/www/simveb-backend && docker-compose exec -T app php artisan view:cache"
+    - echo "✅ Deployment to DEVELOPMENT completed successfully"
+  only:
+    - develop
+    - /^feature\/.*$/
+  when: manual
+
+deploy:staging:
+  extends: .deploy_base
+  stage: deploy
+  environment:
+    name: staging
+    url: https://staging-api.simveb-bj.com
+  script:
+    - echo "Deploying to STAGING environment..."
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cd /var/www/simveb-backend && docker-compose pull && docker-compose up -d"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cd /var/www/simveb-backend && docker-compose exec -T app php artisan migrate --force"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cd /var/www/simveb-backend && docker-compose exec -T app php artisan optimize"
+    - echo "✅ Deployment to STAGING completed successfully"
+  only:
+    - staging
+    - /^release\/.*$/
+  when: manual
+
+deploy:production:
+  extends: .deploy_base
+  stage: deploy
+  environment:
+    name: production
+    url: https://api.simveb-bj.com
+  script:
+    - echo "Deploying to PRODUCTION environment..."
+    - echo "🔒 Running production deployment..."
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose pull"
+    # Backup database before migration
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose exec -T db pg_dump -U simveb simveb > backup-$(date +%Y%m%d-%H%M%S).sql"
+    # Deploy
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose up -d"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose exec -T app php artisan migrate --force"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose exec -T app php artisan optimize"
+    # Clear caches
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose exec -T app php artisan cache:clear"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose exec -T app php artisan view:clear"
+    - echo "✅ Deployment to PRODUCTION completed successfully"
+  only:
+    - main
+    - master
+    - tags
+  when: manual
+  needs:
+    - phpunit:tests
+    - security:composer
+
+# ===================================
+# ROLLBACK (PRODUCTION ONLY)
+# ===================================
+
+rollback:production:
+  extends: .deploy_base
+  stage: deploy
+  environment:
+    name: production
+    url: https://api.simveb-bj.com
+    action: rollback
+  script:
+    - echo "🔄 Rolling back PRODUCTION deployment..."
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose down"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && git reset --hard HEAD~1"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /var/www/simveb-backend && docker-compose up -d"
+    - echo "⚠️ Production rollback completed"
+  only:
+    - main
+    - master
+  when: manual
