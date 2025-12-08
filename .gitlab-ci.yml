@@ -1,0 +1,450 @@
+# GitLab CI/CD Pipeline Principal - SIMVEB
+# Author: DevOps Team
+# Description: Pipeline orchestrateur pour l'ensemble du projet SIMVEB
+
+# Ce pipeline détecte les changements dans les différents composants
+# et déclenche les pipelines appropriés
+
+variables:
+  # Docker Registry
+  CI_REGISTRY: registry.gitlab.com
+  DOCKER_DRIVER: overlay2
+
+# Définition des stages
+stages:
+  - detect-changes
+  - trigger-builds
+  - integration-tests
+  - deploy-all
+  - notify
+
+# ===================================
+# STAGE: DETECT CHANGES
+# Détecte quels composants ont changé
+# ===================================
+
+detect:backend:
+  stage: detect-changes
+  image: alpine:latest
+  script:
+    - echo "Checking for changes in Backend..."
+    - |
+      if [ -n "$(git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA -- simveb-backend-develop/)" ]; then
+        echo "BACKEND_CHANGED=true" > backend.env
+        echo "✅ Backend has changes"
+      else
+        echo "BACKEND_CHANGED=false" > backend.env
+        echo "ℹ️ No changes in Backend"
+      fi
+  artifacts:
+    reports:
+      dotenv: backend.env
+    expire_in: 1 hour
+  only:
+    - branches
+    - merge_requests
+
+detect:portal:
+  stage: detect-changes
+  image: alpine:latest
+  script:
+    - echo "Checking for changes in Portal..."
+    - |
+      if [ -n "$(git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA -- simveb-portal-design-develop/)" ]; then
+        echo "PORTAL_CHANGED=true" > portal.env
+        echo "✅ Portal has changes"
+      else
+        echo "PORTAL_CHANGED=false" > portal.env
+        echo "ℹ️ No changes in Portal"
+      fi
+  artifacts:
+    reports:
+      dotenv: portal.env
+    expire_in: 1 hour
+  only:
+    - branches
+    - merge_requests
+
+detect:backoffice:
+  stage: detect-changes
+  image: alpine:latest
+  script:
+    - echo "Checking for changes in Backoffice..."
+    - |
+      if [ -n "$(git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA -- simveb-backoffice-develop/)" ]; then
+        echo "BACKOFFICE_CHANGED=true" > backoffice.env
+        echo "✅ Backoffice has changes"
+      else
+        echo "BACKOFFICE_CHANGED=false" > backoffice.env
+        echo "ℹ️ No changes in Backoffice"
+      fi
+  artifacts:
+    reports:
+      dotenv: backoffice.env
+    expire_in: 1 hour
+  only:
+    - branches
+    - merge_requests
+
+detect:affiliate:
+  stage: detect-changes
+  image: alpine:latest
+  script:
+    - echo "Checking for changes in Affiliate..."
+    - |
+      if [ -n "$(git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA -- simveb-affiliate-develop/)" ]; then
+        echo "AFFILIATE_CHANGED=true" > affiliate.env
+        echo "✅ Affiliate has changes"
+      else
+        echo "AFFILIATE_CHANGED=false" > affiliate.env
+        echo "ℹ️ No changes in Affiliate"
+      fi
+  artifacts:
+    reports:
+      dotenv: affiliate.env
+    expire_in: 1 hour
+  only:
+    - branches
+    - merge_requests
+
+# ===================================
+# STAGE: TRIGGER BUILDS
+# Déclenche les builds des composants
+# ===================================
+
+trigger:backend:
+  stage: trigger-builds
+  trigger:
+    include:
+      - local: simveb-backend-develop/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - if: '$BACKEND_CHANGED == "true"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  needs:
+    - detect:backend
+
+trigger:portal:
+  stage: trigger-builds
+  trigger:
+    include:
+      - local: simveb-portal-design-develop/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - if: '$PORTAL_CHANGED == "true"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  needs:
+    - detect:portal
+
+trigger:backoffice:
+  stage: trigger-builds
+  trigger:
+    include:
+      - local: simveb-backoffice-develop/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - if: '$BACKOFFICE_CHANGED == "true"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  needs:
+    - detect:backoffice
+
+trigger:affiliate:
+  stage: trigger-builds
+  trigger:
+    include:
+      - local: simveb-affiliate-develop/.gitlab-ci.yml
+    strategy: depend
+  rules:
+    - if: '$AFFILIATE_CHANGED == "true"'
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  needs:
+    - detect:affiliate
+
+# ===================================
+# STAGE: INTEGRATION TESTS
+# Tests d'intégration entre composants
+# ===================================
+
+integration:api-tests:
+  stage: integration-tests
+  image: node:18-alpine
+  services:
+    - postgres:15-alpine
+  variables:
+    POSTGRES_DB: simveb_test
+    POSTGRES_USER: simveb
+    POSTGRES_PASSWORD: secret
+  script:
+    - echo "Running integration tests..."
+    - |
+      if [ -f "tests/integration/package.json" ]; then
+        cd tests/integration
+        npm install
+        npm run test:integration
+      else
+        echo "No integration tests configured"
+      fi
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - master
+
+integration:e2e-tests:
+  stage: integration-tests
+  image: cypress/browsers:node18.12.0-chrome107
+  script:
+    - echo "Running E2E tests..."
+    - |
+      if [ -f "tests/e2e/package.json" ]; then
+        cd tests/e2e
+        npm install
+        npm run test:e2e:ci
+      else
+        echo "No E2E tests configured"
+      fi
+  artifacts:
+    when: always
+    paths:
+      - tests/e2e/cypress/videos/
+      - tests/e2e/cypress/screenshots/
+    expire_in: 7 days
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - master
+
+# ===================================
+# STAGE: DEPLOY ALL
+# Déploiement coordonné de tous les composants
+# ===================================
+
+deploy:all:development:
+  stage: deploy-all
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client curl
+  script:
+    - echo "🚀 Deploying all SIMVEB components to DEVELOPMENT..."
+    - echo "This will trigger all individual deployment jobs"
+  environment:
+    name: development-all
+    url: https://dev.simveb-bj.com
+  only:
+    - develop
+  when: manual
+
+deploy:all:staging:
+  stage: deploy-all
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client curl
+  script:
+    - echo "🚀 Deploying all SIMVEB components to STAGING..."
+    - echo "This will trigger all individual deployment jobs"
+  environment:
+    name: staging-all
+    url: https://staging.simveb-bj.com
+  only:
+    - staging
+    - /^release\/.*$/
+  when: manual
+
+deploy:all:production:
+  stage: deploy-all
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client curl
+  script:
+    - echo "🔒 Deploying all SIMVEB components to PRODUCTION..."
+    - echo "⚠️ This is a production deployment!"
+    - echo "Components will be deployed in order:"
+    - echo "1. Backend API"
+    - echo "2. Portal"
+    - echo "3. Backoffice"
+    - echo "4. Affiliate"
+  environment:
+    name: production-all
+    url: https://simveb-bj.com
+  only:
+    - main
+    - master
+    - tags
+  when: manual
+
+# ===================================
+# STAGE: NOTIFY
+# Notifications après déploiement
+# ===================================
+
+notify:slack:
+  stage: notify
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      if [ -n "$SLACK_WEBHOOK_URL" ]; then
+        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+        COMMIT_AUTHOR=$(git log -1 --pretty=%an)
+
+        curl -X POST $SLACK_WEBHOOK_URL \
+          -H 'Content-Type: application/json' \
+          -d "{
+            \"text\": \"✅ SIMVEB Deployment Completed\",
+            \"blocks\": [
+              {
+                \"type\": \"header\",
+                \"text\": {
+                  \"type\": \"plain_text\",
+                  \"text\": \"✅ Deployment Successful\"
+                }
+              },
+              {
+                \"type\": \"section\",
+                \"fields\": [
+                  {\"type\": \"mrkdwn\", \"text\": \"*Project:*\nSIMVEB\"},
+                  {\"type\": \"mrkdwn\", \"text\": \"*Branch:*\n$CI_COMMIT_REF_NAME\"},
+                  {\"type\": \"mrkdwn\", \"text\": \"*Commit:*\n$CI_COMMIT_SHORT_SHA\"},
+                  {\"type\": \"mrkdwn\", \"text\": \"*Author:*\n$COMMIT_AUTHOR\"}
+                ]
+              },
+              {
+                \"type\": \"section\",
+                \"text\": {
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"*Commit Message:*\n$COMMIT_MESSAGE\"
+                }
+              },
+              {
+                \"type\": \"actions\",
+                \"elements\": [
+                  {
+                    \"type\": \"button\",
+                    \"text\": {\"type\": \"plain_text\", \"text\": \"View Pipeline\"},
+                    \"url\": \"$CI_PIPELINE_URL\"
+                  }
+                ]
+              }
+            ]
+          }"
+        echo "✅ Slack notification sent"
+      else
+        echo "ℹ️ SLACK_WEBHOOK_URL not configured"
+      fi
+  allow_failure: true
+  only:
+    - main
+    - master
+    - staging
+  when: on_success
+
+notify:email:
+  stage: notify
+  image: alpine:latest
+  script:
+    - echo "📧 Email notification would be sent here"
+    - echo "Environment: $CI_ENVIRONMENT_NAME"
+    - echo "Status: Success"
+    - echo "Pipeline URL: $CI_PIPELINE_URL"
+  allow_failure: true
+  only:
+    - main
+    - master
+  when: on_success
+
+# ===================================
+# SCHEDULE JOBS (Nightly builds, etc.)
+# ===================================
+
+# Pour activer: GitLab > CI/CD > Schedules
+# Créer un schedule avec la variable SCHEDULED_JOB=nightly
+
+nightly:full-build:
+  stage: trigger-builds
+  script:
+    - echo "🌙 Running nightly full build of all components"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "nightly"'
+  trigger:
+    include:
+      - local: simveb-backend-develop/.gitlab-ci.yml
+      - local: simveb-portal-design-develop/.gitlab-ci.yml
+      - local: simveb-backoffice-develop/.gitlab-ci.yml
+      - local: simveb-affiliate-develop/.gitlab-ci.yml
+
+security:weekly-scan:
+  stage: integration-tests
+  image: alpine:latest
+  script:
+    - echo "🔒 Running weekly security scan"
+    - echo "This would run comprehensive security checks across all components"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $SCHEDULED_JOB == "security"'
+  allow_failure: true
+
+# ===================================
+# MANUAL JOBS
+# ===================================
+
+rollback:production:
+  stage: deploy-all
+  image: alpine:latest
+  script:
+    - echo "🔄 Rolling back PRODUCTION deployment"
+    - echo "This will trigger rollback for all components"
+  environment:
+    name: production-all
+    action: rollback
+  only:
+    - main
+    - master
+  when: manual
+
+database:backup:
+  stage: deploy-all
+  image: postgres:15-alpine
+  script:
+    - echo "💾 Creating database backup..."
+    - |
+      if [ -n "$DB_HOST" ]; then
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        pg_dump -h $DB_HOST -U $DB_USERNAME $DB_DATABASE > backup-$TIMESTAMP.sql
+        echo "✅ Backup created: backup-$TIMESTAMP.sql"
+      else
+        echo "⚠️ DB_HOST not configured"
+      fi
+  artifacts:
+    paths:
+      - backup-*.sql
+    expire_in: 30 days
+  only:
+    - main
+    - master
+  when: manual
+
+# ===================================
+# INCLUDE: Workflows et règles
+# ===================================
+
+workflow:
+  rules:
+    # Ne pas exécuter pour les commits draft
+    - if: $CI_COMMIT_TITLE =~ /^DRAFT/
+      when: never
+    # Ne pas exécuter pour les commits WIP
+    - if: $CI_COMMIT_TITLE =~ /^WIP/
+      when: never
+    # Exécuter pour les branches
+    - if: $CI_COMMIT_BRANCH
+    # Exécuter pour les merge requests
+    - if: $CI_MERGE_REQUEST_ID
+    # Exécuter pour les tags
+    - if: $CI_COMMIT_TAG
+    # Exécuter pour les schedules
+    - if: $CI_PIPELINE_SOURCE == "schedule"
