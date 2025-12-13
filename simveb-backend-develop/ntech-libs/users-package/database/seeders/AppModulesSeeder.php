@@ -727,6 +727,7 @@ class AppModulesSeeder extends Seeder
                     ['name' => 'validate-pledge-by-anatt', 'label' => "Valider un dossier de gage par l'anatt"],
                     ['name' => 'validate-pledge-by-institution', 'label' => "Valider un dossier de gage par une institution"],
                     ['name' => 'validate-pledge-by-justice', 'label' => "Valider un dossier de gage par la justice"],
+                    ['name' => 'issue-pledge', 'label' => "Émettre un gage"],
                     ['name' => 'reject-pledge-by-anatt', 'label' => "Rejeter un gage par l'anatt"],
                     ['name' => 'reject-pledge-by-institution', 'label' => "Rejeter un gage par une institution"],
                     ['name' => 'reject-pledge-by-justice', 'label' => "Rejeter un gage par la justice"],
