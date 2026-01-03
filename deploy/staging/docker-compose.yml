@@ -1,0 +1,241 @@
+version: '3.8'
+
+# Docker Compose pour SIMVEB - Environnement STAGING
+# Ce fichier orchestre tous les services de l'application sur la VM App (Staging)
+
+services:
+  # =========================================
+  # BACKEND - Laravel API
+  # =========================================
+  backend:
+    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-backend-staging
+    restart: unless-stopped
+    environment:
+      - APP_NAME=SIMVEB
+      - APP_ENV=staging
+      - APP_DEBUG=true
+      - APP_URL=https://staging-api.simveb-bj.com
+
+      # Database
+      - DB_CONNECTION=pgsql
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=5432
+      - DB_DATABASE=simveb_staging
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+
+      # Cache & Session
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-null}
+      - REDIS_PORT=6379
+
+      # Queue
+      - QUEUE_CONNECTION=redis
+
+      # OAuth Passport
+      - PASSPORT_CLIENT_ID=${PASSPORT_CLIENT_ID}
+      - PASSPORT_CLIENT_SECRET=${PASSPORT_CLIENT_SECRET}
+
+      # Payment Gateways
+      - FEDAPAY_PUBLIC_KEY=${FEDAPAY_PUBLIC_KEY}
+      - FEDAPAY_SECRET_KEY=${FEDAPAY_SECRET_KEY}
+      - FEDAPAY_ENVIRONMENT=sandbox
+      - KKIAPAY_PRIVATE_KEY=${KKIAPAY_PRIVATE_KEY}
+      - KKIAPAY_PUBLIC_KEY=${KKIAPAY_PUBLIC_KEY}
+      - KKIAPAY_SECRET=${KKIAPAY_SECRET}
+      - KKIAPAY_SANDBOX=true
+
+      # Monitoring
+      - SENTRY_LARAVEL_DSN=${SENTRY_DSN}
+      - SENTRY_ENVIRONMENT=staging
+
+    volumes:
+      - backend-storage:/var/www/html/storage
+      - backend-logs:/var/www/html/storage/logs
+    networks:
+      - simveb-network
+    depends_on:
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend-staging.rule=Host(`staging-api.simveb-bj.com`)"
+      - "traefik.http.routers.backend-staging.entrypoints=websecure"
+      - "traefik.http.routers.backend-staging.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend-staging.loadbalancer.server.port=9000"
+
+  # =========================================
+  # NGINX - Web Server for Backend
+  # =========================================
+  nginx:
+    image: ${CI_REGISTRY_IMAGE}/backend-nginx:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-nginx-staging
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - backend-storage:/var/www/html/storage:ro
+    networks:
+      - simveb-network
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx-staging.rule=Host(`staging-api.simveb-bj.com`)"
+      - "traefik.http.routers.nginx-staging.entrypoints=websecure"
+      - "traefik.http.routers.nginx-staging.tls.certresolver=letsencrypt"
+
+  # =========================================
+  # PORTAL - Nuxt.js Frontend
+  # =========================================
+  portal:
+    image: ${CI_REGISTRY_IMAGE}/portal:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-portal-staging
+    restart: unless-stopped
+    environment:
+      - NUXT_PUBLIC_API_URL=https://staging-api.simveb-bj.com
+      - NUXT_PUBLIC_CLIENT_ID=${PORTAL_CLIENT_ID}
+      - NUXT_PUBLIC_CLIENT_SECRET=${PORTAL_CLIENT_SECRET}
+      - NUXT_PUBLIC_FEDAPAY_PUBLIC_KEY=${FEDAPAY_PUBLIC_KEY}
+      - NUXT_PUBLIC_SENTRY_DSN=${PORTAL_SENTRY_DSN}
+      - NUXT_PUBLIC_ENVIRONMENT=staging
+    ports:
+      - "3000:3000"
+    networks:
+      - simveb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portal-staging.rule=Host(`staging.simveb-bj.com`)"
+      - "traefik.http.routers.portal-staging.entrypoints=websecure"
+      - "traefik.http.routers.portal-staging.tls.certresolver=letsencrypt"
+      - "traefik.http.services.portal-staging.loadbalancer.server.port=3000"
+
+  # =========================================
+  # BACKOFFICE - Vue.js Admin Panel
+  # =========================================
+  backoffice:
+    image: ${CI_REGISTRY_IMAGE}/backoffice:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-backoffice-staging
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=https://staging-api.simveb-bj.com
+      - VITE_CLIENT_ID=${BACKOFFICE_CLIENT_ID}
+      - VITE_CLIENT_SECRET=${BACKOFFICE_CLIENT_SECRET}
+      - VITE_MAPBOX_ACCESS_TOKEN=${MAPBOX_ACCESS_TOKEN}
+      - VITE_SENTRY_DSN=${BACKOFFICE_SENTRY_DSN}
+      - VITE_ENVIRONMENT=staging
+    ports:
+      - "3001:80"
+    networks:
+      - simveb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backoffice-staging.rule=Host(`staging-admin.simveb-bj.com`)"
+      - "traefik.http.routers.backoffice-staging.entrypoints=websecure"
+      - "traefik.http.routers.backoffice-staging.tls.certresolver=letsencrypt"
+
+  # =========================================
+  # AFFILIATE - Vue.js Affiliate Portal
+  # =========================================
+  affiliate:
+    image: ${CI_REGISTRY_IMAGE}/affiliate:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-affiliate-staging
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=https://staging-api.simveb-bj.com
+      - VITE_CLIENT_ID=${AFFILIATE_CLIENT_ID}
+      - VITE_CLIENT_SECRET=${AFFILIATE_CLIENT_SECRET}
+      - VITE_SENTRY_DSN=${AFFILIATE_SENTRY_DSN}
+      - VITE_ENVIRONMENT=staging
+    ports:
+      - "3002:80"
+    networks:
+      - simveb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.affiliate-staging.rule=Host(`staging-affiliate.simveb-bj.com`)"
+      - "traefik.http.routers.affiliate-staging.entrypoints=websecure"
+      - "traefik.http.routers.affiliate-staging.tls.certresolver=letsencrypt"
+
+  # =========================================
+  # REDIS - Cache & Queue
+  # =========================================
+  redis:
+    image: redis:7-alpine
+    container_name: simveb-redis-staging
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-simveb_redis_2024}
+    volumes:
+      - redis-data:/data
+    networks:
+      - simveb-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # =========================================
+  # QUEUE WORKER - Laravel Queue
+  # =========================================
+  queue-worker:
+    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-queue-staging
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    environment:
+      - APP_ENV=staging
+      - DB_HOST=${DB_HOST}
+      - DB_DATABASE=simveb_staging
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-simveb_redis_2024}
+      - QUEUE_CONNECTION=redis
+    volumes:
+      - backend-storage:/var/www/html/storage
+      - backend-logs:/var/www/html/storage/logs
+    networks:
+      - simveb-network
+    depends_on:
+      - redis
+      - backend
+
+  # =========================================
+  # SCHEDULER - Laravel Cron
+  # =========================================
+  scheduler:
+    image: ${CI_REGISTRY_IMAGE}/backend:${CI_COMMIT_SHORT_SHA:-latest}
+    container_name: simveb-scheduler-staging
+    restart: unless-stopped
+    command: bash -c "while true; do php artisan schedule:run --verbose --no-interaction & sleep 60; done"
+    environment:
+      - APP_ENV=staging
+      - DB_HOST=${DB_HOST}
+      - DB_DATABASE=simveb_staging
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-simveb_redis_2024}
+    volumes:
+      - backend-storage:/var/www/html/storage
+      - backend-logs:/var/www/html/storage/logs
+    networks:
+      - simveb-network
+    depends_on:
+      - redis
+      - backend
+
+volumes:
+  backend-storage:
+    driver: local
+  backend-logs:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  simveb-network:
+    driver: bridge
