@@ -224,57 +224,205 @@ integration:e2e-tests:
 # Déploiement coordonné de tous les composants
 # ===================================
 
-deploy:all:development:
+# Job de déploiement STAGING (automatique sur branche staging)
+deploy:staging:
   stage: deploy-all
   image: alpine:latest
   before_script:
-    - apk add --no-cache openssh-client curl
+    - apk add --no-cache openssh-client bash rsync curl
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_HOST_STAGING >> ~/.ssh/known_hosts
   script:
-    - echo "🚀 Deploying all SIMVEB components to DEVELOPMENT..."
-    - echo "This will trigger all individual deployment jobs"
-  environment:
-    name: development-all
-    url: https://dev.simveb-bj.com
-  only:
-    - develop
-  when: manual
+    - echo "🚀 Deploying SIMVEB to STAGING environment..."
+    - echo "Target: $DEPLOY_HOST_STAGING"
 
-deploy:all:staging:
-  stage: deploy-all
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache openssh-client curl
-  script:
-    - echo "🚀 Deploying all SIMVEB components to STAGING..."
-    - echo "This will trigger all individual deployment jobs"
+    # Sync deployment files to server
+    - rsync -avz --delete deploy/ $DEPLOY_USER@$DEPLOY_HOST_STAGING:/opt/simveb/deploy/
+    - rsync -avz --delete simvebbase\ \(1\).sql $DEPLOY_USER@$DEPLOY_HOST_STAGING:/opt/simveb/ || true
+
+    # Create .env.staging file on server
+    - |
+      ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cat > /opt/simveb/.env.staging << 'EOF'
+      CI_REGISTRY=$CI_REGISTRY
+      CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE
+      CI_REGISTRY_USER=$CI_DEPLOY_USER
+      CI_REGISTRY_PASSWORD=$CI_DEPLOY_PASSWORD
+      CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA
+
+      DB_HOST=$DB_HOST_STAGING
+      DB_USERNAME=$DB_USERNAME_STAGING
+      DB_PASSWORD=$DB_PASSWORD_STAGING
+
+      REDIS_PASSWORD=$REDIS_PASSWORD_STAGING
+
+      PASSPORT_CLIENT_ID=$PASSPORT_CLIENT_ID_STAGING
+      PASSPORT_CLIENT_SECRET=$PASSPORT_CLIENT_SECRET_STAGING
+
+      FEDAPAY_PUBLIC_KEY=$FEDAPAY_PUBLIC_KEY_SANDBOX
+      FEDAPAY_SECRET_KEY=$FEDAPAY_SECRET_KEY_SANDBOX
+
+      KKIAPAY_PRIVATE_KEY=$KKIAPAY_PRIVATE_KEY_SANDBOX
+      KKIAPAY_PUBLIC_KEY=$KKIAPAY_PUBLIC_KEY_SANDBOX
+      KKIAPAY_SECRET=$KKIAPAY_SECRET_SANDBOX
+
+      SENTRY_DSN=$SENTRY_DSN_STAGING
+
+      PORTAL_CLIENT_ID=$PORTAL_CLIENT_ID_STAGING
+      PORTAL_CLIENT_SECRET=$PORTAL_CLIENT_SECRET_STAGING
+      PORTAL_SENTRY_DSN=$PORTAL_SENTRY_DSN_STAGING
+
+      BACKOFFICE_CLIENT_ID=$BACKOFFICE_CLIENT_ID_STAGING
+      BACKOFFICE_CLIENT_SECRET=$BACKOFFICE_CLIENT_SECRET_STAGING
+      BACKOFFICE_SENTRY_DSN=$BACKOFFICE_SENTRY_DSN_STAGING
+      MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN
+
+      AFFILIATE_CLIENT_ID=$AFFILIATE_CLIENT_ID_STAGING
+      AFFILIATE_CLIENT_SECRET=$AFFILIATE_CLIENT_SECRET_STAGING
+      AFFILIATE_SENTRY_DSN=$AFFILIATE_SENTRY_DSN_STAGING
+      EOF
+      "
+
+    # Execute deployment script
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cd /opt/simveb && bash deploy/staging/deploy-all.sh"
+
+    # Health check
+    - sleep 30
+    - curl -f http://$DEPLOY_HOST_STAGING:8080/health || echo "Warning: Backend health check failed"
+
+    - echo "✅ Staging deployment completed!"
   environment:
-    name: staging-all
+    name: staging
     url: https://staging.simveb-bj.com
+    on_stop: stop:staging
   only:
     - staging
-    - /^release\/.*$/
-  when: manual
+  when: on_success
 
-deploy:all:production:
+# Job d'arrêt de staging
+stop:staging:
   stage: deploy-all
   image: alpine:latest
   before_script:
-    - apk add --no-cache openssh-client curl
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_HOST_STAGING >> ~/.ssh/known_hosts
   script:
-    - echo "🔒 Deploying all SIMVEB components to PRODUCTION..."
-    - echo "⚠️ This is a production deployment!"
-    - echo "Components will be deployed in order:"
-    - echo "1. Backend API"
-    - echo "2. Portal"
-    - echo "3. Backoffice"
-    - echo "4. Affiliate"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cd /opt/simveb && docker-compose -f deploy/staging/docker-compose.yml down"
   environment:
-    name: production-all
+    name: staging
+    action: stop
+  only:
+    - staging
+  when: manual
+
+# Job de déploiement PRODUCTION (manuel sur branche main)
+deploy:production:
+  stage: deploy-all
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client bash rsync curl
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_HOST_PROD >> ~/.ssh/known_hosts
+  script:
+    - echo "🔒 Deploying SIMVEB to PRODUCTION environment..."
+    - echo "⚠️ This is a PRODUCTION deployment!"
+    - echo "Target: $DEPLOY_HOST_PROD"
+
+    # Sync deployment files to server
+    - rsync -avz --delete deploy/ $DEPLOY_USER@$DEPLOY_HOST_PROD:/opt/simveb/deploy/
+    - rsync -avz --delete simvebbase\ \(1\).sql $DEPLOY_USER@$DEPLOY_HOST_PROD:/opt/simveb/ || true
+
+    # Create .env.production file on server
+    - |
+      ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cat > /opt/simveb/.env.production << 'EOF'
+      CI_REGISTRY=$CI_REGISTRY
+      CI_REGISTRY_IMAGE=$CI_REGISTRY_IMAGE
+      CI_REGISTRY_USER=$CI_DEPLOY_USER
+      CI_REGISTRY_PASSWORD=$CI_DEPLOY_PASSWORD
+      CI_COMMIT_TAG=${CI_COMMIT_TAG:-latest}
+
+      DB_HOST=$DB_HOST_PROD
+      DB_USERNAME=$DB_USERNAME_PROD
+      DB_PASSWORD=$DB_PASSWORD_PROD
+
+      REDIS_PASSWORD=$REDIS_PASSWORD_PROD
+
+      PASSPORT_CLIENT_ID=$PASSPORT_CLIENT_ID_PROD
+      PASSPORT_CLIENT_SECRET=$PASSPORT_CLIENT_SECRET_PROD
+
+      FEDAPAY_PUBLIC_KEY=$FEDAPAY_PUBLIC_KEY_LIVE
+      FEDAPAY_SECRET_KEY=$FEDAPAY_SECRET_KEY_LIVE
+
+      KKIAPAY_PRIVATE_KEY=$KKIAPAY_PRIVATE_KEY_LIVE
+      KKIAPAY_PUBLIC_KEY=$KKIAPAY_PUBLIC_KEY_LIVE
+      KKIAPAY_SECRET=$KKIAPAY_SECRET_LIVE
+
+      SENTRY_DSN=$SENTRY_DSN_PROD
+
+      PORTAL_CLIENT_ID=$PORTAL_CLIENT_ID_PROD
+      PORTAL_CLIENT_SECRET=$PORTAL_CLIENT_SECRET_PROD
+      PORTAL_SENTRY_DSN=$PORTAL_SENTRY_DSN_PROD
+
+      BACKOFFICE_CLIENT_ID=$BACKOFFICE_CLIENT_ID_PROD
+      BACKOFFICE_CLIENT_SECRET=$BACKOFFICE_CLIENT_SECRET_PROD
+      BACKOFFICE_SENTRY_DSN=$BACKOFFICE_SENTRY_DSN_PROD
+      MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN
+
+      AFFILIATE_CLIENT_ID=$AFFILIATE_CLIENT_ID_PROD
+      AFFILIATE_CLIENT_SECRET=$AFFILIATE_CLIENT_SECRET_PROD
+      AFFILIATE_SENTRY_DSN=$AFFILIATE_SENTRY_DSN_PROD
+
+      SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL
+      EOF
+      "
+
+    # Execute deployment script
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /opt/simveb && bash deploy/production/deploy-all.sh"
+
+    # Health check
+    - sleep 60
+    - curl -f http://$DEPLOY_HOST_PROD:8080/health || (echo "ERROR: Production health check failed!" && exit 1)
+
+    - echo "✅ Production deployment completed successfully!"
+  environment:
+    name: production
     url: https://simveb-bj.com
   only:
     - main
     - master
     - tags
+  when: manual
+
+# Rollback PRODUCTION
+rollback:production:
+  stage: deploy-all
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_HOST_PROD >> ~/.ssh/known_hosts
+  script:
+    - echo "🔄 Rolling back PRODUCTION deployment..."
+    - ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /opt/simveb && bash deploy/production/deploy-all.sh rollback"
+    - echo "✅ Rollback completed"
+  environment:
+    name: production
+    action: rollback
+  only:
+    - main
+    - master
   when: manual
 
 # ===================================
@@ -406,26 +554,32 @@ rollback:production:
     - master
   when: manual
 
-database:backup:
+# Database backup is now handled automatically in deployment scripts
+# Manual backup job for emergency use
+database:manual-backup:
   stage: deploy-all
-  image: postgres:15-alpine
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
   script:
-    - echo "💾 Creating database backup..."
+    - echo "💾 Creating manual database backup..."
     - |
-      if [ -n "$DB_HOST" ]; then
-        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-        pg_dump -h $DB_HOST -U $DB_USERNAME $DB_DATABASE > backup-$TIMESTAMP.sql
-        echo "✅ Backup created: backup-$TIMESTAMP.sql"
+      if [ "$CI_COMMIT_BRANCH" = "main" ] || [ "$CI_COMMIT_BRANCH" = "master" ]; then
+        ssh-keyscan -H $DEPLOY_HOST_PROD >> ~/.ssh/known_hosts
+        ssh $DEPLOY_USER@$DEPLOY_HOST_PROD "cd /opt/simveb && bash deploy/database/backup-db.sh production"
       else
-        echo "⚠️ DB_HOST not configured"
+        ssh-keyscan -H $DEPLOY_HOST_STAGING >> ~/.ssh/known_hosts
+        ssh $DEPLOY_USER@$DEPLOY_HOST_STAGING "cd /opt/simveb && bash deploy/database/backup-db.sh staging"
       fi
-  artifacts:
-    paths:
-      - backup-*.sql
-    expire_in: 30 days
+    - echo "✅ Manual backup completed"
   only:
     - main
     - master
+    - staging
   when: manual
 
 # ===================================
