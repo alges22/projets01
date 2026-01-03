@@ -1,0 +1,300 @@
+groups:
+  # =========================================
+  # ALERTES SYSTÈME
+  # =========================================
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # VM Down
+      - alert: VMDown
+        expr: up{job=~"node-exporter.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: system
+        annotations:
+          summary: "VM {{ $labels.vm }} is down"
+          description: "VM {{ $labels.vm }} ({{ $labels.env }}) has been down for more than 1 minute."
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance, vm, env) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.vm }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.vm }} ({{ $labels.env }})"
+
+      # Critical CPU Usage
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance, vm, env) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: system
+        annotations:
+          summary: "CRITICAL CPU usage on {{ $labels.vm }}"
+          description: "CPU usage is {{ $value }}% on {{ $labels.vm }} ({{ $labels.env }})"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "High memory usage on {{ $labels.vm }}"
+          description: "Memory usage is {{ $value }}% on {{ $labels.vm }} ({{ $labels.env }})"
+
+      # Critical Memory Usage
+      - alert: CriticalMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: system
+        annotations:
+          summary: "CRITICAL memory usage on {{ $labels.vm }}"
+          description: "Memory usage is {{ $value }}% on {{ $labels.vm }} ({{ $labels.env }})"
+
+      # Low Disk Space
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          category: system
+        annotations:
+          summary: "Low disk space on {{ $labels.vm }}"
+          description: "Only {{ $value }}% disk space left on {{ $labels.vm }} ({{ $labels.env }})"
+
+      # Critical Disk Space
+      - alert: CriticalDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 2m
+        labels:
+          severity: critical
+          category: system
+        annotations:
+          summary: "CRITICAL disk space on {{ $labels.vm }}"
+          description: "Only {{ $value }}% disk space left on {{ $labels.vm }} ({{ $labels.env }})"
+
+  # =========================================
+  # ALERTES DOCKER
+  # =========================================
+  - name: docker_alerts
+    interval: 30s
+    rules:
+      # Container Down
+      - alert: ContainerDown
+        expr: time() - container_last_seen{name=~"simveb.*"} > 60
+        for: 1m
+        labels:
+          severity: critical
+          category: docker
+        annotations:
+          summary: "Container {{ $labels.name }} is down"
+          description: "Container {{ $labels.name }} on {{ $labels.instance }} has been down for more than 1 minute."
+
+      # Container Restarting
+      - alert: ContainerRestarting
+        expr: rate(container_start_time_seconds{name=~"simveb.*"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          category: docker
+        annotations:
+          summary: "Container {{ $labels.name }} is restarting frequently"
+          description: "Container {{ $labels.name }} is restarting frequently ({{ $value }} restarts/minute)"
+
+      # High Container Memory
+      - alert: HighContainerMemory
+        expr: (container_memory_usage_bytes{name=~"simveb.*"} / container_spec_memory_limit_bytes{name=~"simveb.*"}) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: docker
+        annotations:
+          summary: "High memory usage in container {{ $labels.name }}"
+          description: "Container {{ $labels.name }} is using {{ $value }}% of its memory limit"
+
+  # =========================================
+  # ALERTES POSTGRESQL
+  # =========================================
+  - name: postgresql_alerts
+    interval: 30s
+    rules:
+      # PostgreSQL Down
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "PostgreSQL {{ $labels.db }} is down"
+          description: "PostgreSQL database {{ $labels.db }} ({{ $labels.env }}) is down"
+
+      # Too Many Connections
+      - alert: PostgreSQLTooManyConnections
+        expr: (pg_stat_database_numbackends / pg_settings_max_connections) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Too many connections to {{ $labels.db }}"
+          description: "{{ $labels.db }} is using {{ $value }}% of available connections"
+
+      # Slow Queries
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration[5m]) > 60
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Slow queries detected on {{ $labels.db }}"
+          description: "Queries taking more than 60 seconds detected on {{ $labels.db }}"
+
+      # Replication Lag
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag > 10
+        for: 5m
+        labels:
+          severity: warning
+          category: database
+        annotations:
+          summary: "Replication lag on {{ $labels.db }}"
+          description: "Replication lag is {{ $value }} seconds on {{ $labels.db }}"
+
+  # =========================================
+  # ALERTES APPLICATION (HTTP/HTTPS)
+  # =========================================
+  - name: application_alerts
+    interval: 30s
+    rules:
+      # Service Down
+      - alert: ServiceDown
+        expr: probe_success{job=~"blackbox-http.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: application
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "{{ $labels.instance }} ({{ $labels.env }}) has been down for more than 2 minutes"
+
+      # Slow Response Time
+      - alert: SlowResponseTime
+        expr: probe_http_duration_seconds{job=~"blackbox-http.*"} > 3
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Slow response time on {{ $labels.instance }}"
+          description: "{{ $labels.instance }} response time is {{ $value }}s"
+
+      # SSL Certificate Expiring
+      - alert: SSLCertificateExpiring
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
+        for: 1h
+        labels:
+          severity: warning
+          category: ssl
+        annotations:
+          summary: "SSL certificate expiring soon on {{ $labels.instance }}"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value }} days"
+
+      # SSL Certificate Expiring Critical
+      - alert: SSLCertificateExpiringCritical
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 7
+        for: 1h
+        labels:
+          severity: critical
+          category: ssl
+        annotations:
+          summary: "SSL certificate expiring VERY SOON on {{ $labels.instance }}"
+          description: "SSL certificate for {{ $labels.instance }} expires in {{ $value }} days!"
+
+      # High HTTP Error Rate
+      - alert: HighHTTPErrorRate
+        expr: rate(probe_http_status_code{job=~"blackbox-http.*"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High HTTP error rate on {{ $labels.instance }}"
+          description: "{{ $labels.instance }} has high error rate: {{ $value }} errors/s"
+
+  # =========================================
+  # ALERTES REDIS
+  # =========================================
+  - name: redis_alerts
+    interval: 30s
+    rules:
+      # Redis Down
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: cache
+        annotations:
+          summary: "Redis is down on {{ $labels.instance }}"
+          description: "Redis on {{ $labels.instance }} ({{ $labels.env }}) is down"
+
+      # Redis High Memory
+      - alert: RedisHighMemory
+        expr: (redis_memory_used_bytes / redis_memory_max_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Redis high memory usage on {{ $labels.instance }}"
+          description: "Redis is using {{ $value }}% of max memory on {{ $labels.instance }}"
+
+      # Redis Too Many Connected Clients
+      - alert: RedisTooManyClients
+        expr: redis_connected_clients > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: cache
+        annotations:
+          summary: "Too many Redis clients on {{ $labels.instance }}"
+          description: "{{ $value }} clients connected to Redis on {{ $labels.instance }}"
+
+  # =========================================
+  # ALERTES LARAVEL
+  # =========================================
+  - name: laravel_alerts
+    interval: 30s
+    rules:
+      # Laravel Queue Failures
+      - alert: LaravelQueueFailures
+        expr: rate(laravel_queue_failed_jobs_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "Laravel queue failures on {{ $labels.instance }}"
+          description: "{{ $value }} job failures per minute on {{ $labels.instance }}"
+
+      # Laravel High Queue Size
+      - alert: LaravelHighQueueSize
+        expr: laravel_queue_size > 1000
+        for: 10m
+        labels:
+          severity: warning
+          category: application
+        annotations:
+          summary: "High queue size on {{ $labels.instance }}"
+          description: "Queue size is {{ $value }} on {{ $labels.instance }}"

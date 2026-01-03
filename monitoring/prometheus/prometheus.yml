@@ -1,0 +1,195 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'simveb'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - '/etc/prometheus/alerts/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # =========================================
+  # Prometheus itself
+  # =========================================
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # =========================================
+  # Node Exporters - Métriques système VMs
+  # =========================================
+  - job_name: 'node-exporter-staging-app'
+    static_configs:
+      - targets: ['10.x.x.10:9100']  # À remplacer par l'IP réelle
+        labels:
+          env: 'staging'
+          type: 'app'
+          vm: 'staging-app'
+
+  - job_name: 'node-exporter-staging-db'
+    static_configs:
+      - targets: ['10.x.x.20:9100']  # À remplacer par l'IP réelle
+        labels:
+          env: 'staging'
+          type: 'db'
+          vm: 'staging-db'
+
+  - job_name: 'node-exporter-production-app'
+    static_configs:
+      - targets: ['10.x.x.30:9100']  # À remplacer par l'IP réelle
+        labels:
+          env: 'production'
+          type: 'app'
+          vm: 'production-app'
+
+  - job_name: 'node-exporter-production-db'
+    static_configs:
+      - targets: ['10.x.x.40:9100']  # À remplacer par l'IP réelle
+        labels:
+          env: 'production'
+          type: 'db'
+          vm: 'production-db'
+
+  # =========================================
+  # cAdvisor - Métriques Docker
+  # =========================================
+  - job_name: 'cadvisor-staging'
+    static_configs:
+      - targets: ['10.x.x.10:8080']  # À remplacer par l'IP réelle
+        labels:
+          env: 'staging'
+          vm: 'staging-app'
+
+  - job_name: 'cadvisor-production'
+    static_configs:
+      - targets: ['10.x.x.30:8080']  # À remplacer par l'IP réelle
+        labels:
+          env: 'production'
+          vm: 'production-app'
+
+  # =========================================
+  # PostgreSQL Exporters
+  # =========================================
+  - job_name: 'postgres-exporter-staging'
+    static_configs:
+      - targets: ['10.x.x.20:9187']  # À remplacer par l'IP réelle
+        labels:
+          env: 'staging'
+          db: 'simveb_staging'
+
+  - job_name: 'postgres-exporter-production'
+    static_configs:
+      - targets: ['10.x.x.40:9187']  # À remplacer par l'IP réelle
+        labels:
+          env: 'production'
+          db: 'simveb_production'
+
+  # =========================================
+  # Redis Exporter
+  # =========================================
+  - job_name: 'redis-staging'
+    static_configs:
+      - targets: ['10.x.x.10:9121']  # À remplacer par l'IP réelle
+        labels:
+          env: 'staging'
+
+  - job_name: 'redis-production'
+    static_configs:
+      - targets: ['10.x.x.30:9121']  # À remplacer par l'IP réelle
+        labels:
+          env: 'production'
+
+  # =========================================
+  # Application Metrics (Laravel)
+  # =========================================
+  - job_name: 'laravel-staging'
+    static_configs:
+      - targets: ['10.x.x.10:9000']  # À remplacer par l'IP réelle
+        labels:
+          env: 'staging'
+          app: 'backend'
+    metrics_path: '/metrics'
+
+  - job_name: 'laravel-production'
+    static_configs:
+      - targets: ['10.x.x.30:9000']  # À remplacer par l'IP réelle
+        labels:
+          env: 'production'
+          app: 'backend'
+    metrics_path: '/metrics'
+
+  # =========================================
+  # Blackbox Exporter - Monitoring HTTP/HTTPS
+  # =========================================
+  - job_name: 'blackbox-http-staging'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://staging-api.simveb-bj.com/health
+          - https://staging.simveb-bj.com
+          - https://staging-admin.simveb-bj.com
+          - https://staging-affiliate.simveb-bj.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - target_label: env
+        replacement: staging
+
+  - job_name: 'blackbox-http-production'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://api.simveb-bj.com/health
+          - https://simveb-bj.com
+          - https://admin.simveb-bj.com
+          - https://affiliate.simveb-bj.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - target_label: env
+        replacement: production
+
+  # =========================================
+  # SSL Certificate Monitoring
+  # =========================================
+  - job_name: 'blackbox-ssl-production'
+    metrics_path: /probe
+    params:
+      module: [ssl_expiry]
+    static_configs:
+      - targets:
+          - simveb-bj.com:443
+          - api.simveb-bj.com:443
+          - admin.simveb-bj.com:443
+          - affiliate.simveb-bj.com:443
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

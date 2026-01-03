@@ -1,0 +1,242 @@
+version: '3.8'
+
+# ========================================
+# SIMVEB - Stack de Monitoring Complète
+# Prometheus + Grafana + Loki + Alertmanager
+# ========================================
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  alertmanager_data:
+
+services:
+  # =========================================
+  # PROMETHEUS - Collecte des métriques
+  # =========================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    labels:
+      - "prometheus.enable=true"
+
+  # =========================================
+  # GRAFANA - Visualisation
+  # =========================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-simveb_admin_2024}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      - GF_SERVER_ROOT_URL=https://monitoring.simveb-bj.com
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=monitoring@simveb-bj.com
+      - GF_SMTP_FROM_NAME=SIMVEB Monitoring
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+      - loki
+
+  # =========================================
+  # LOKI - Aggregation de logs
+  # =========================================
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring
+
+  # =========================================
+  # PROMTAIL - Agent de collecte de logs
+  # =========================================
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./loki/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  # =========================================
+  # ALERTMANAGER - Gestion des alertes
+  # =========================================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ./alertmanager/config.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - monitoring
+
+  # =========================================
+  # NODE EXPORTER - Métriques système
+  # (À déployer sur chaque VM)
+  # =========================================
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+  # =========================================
+  # CADVISOR - Métriques Docker
+  # =========================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - monitoring
+
+  # =========================================
+  # POSTGRES EXPORTER - Métriques PostgreSQL
+  # (Configuration pour se connecter aux VMs DB)
+  # =========================================
+  postgres-exporter-staging:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter-staging
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://simveb:${DB_PASSWORD_STAGING}@${DB_HOST_STAGING}:5432/simveb_staging?sslmode=require"
+    ports:
+      - "9187:9187"
+    networks:
+      - monitoring
+
+  postgres-exporter-production:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter-production
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://simveb:${DB_PASSWORD_PROD}@${DB_HOST_PROD}:5432/simveb_production?sslmode=require"
+    ports:
+      - "9188:9187"
+    networks:
+      - monitoring
+
+  # =========================================
+  # REDIS EXPORTER - Métriques Redis
+  # =========================================
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    ports:
+      - "9121:9121"
+    networks:
+      - monitoring
+
+  # =========================================
+  # BLACKBOX EXPORTER - Monitoring HTTP/HTTPS
+  # =========================================
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/blackbox/config.yml'
+    volumes:
+      - ./prometheus/blackbox.yml:/etc/blackbox/config.yml:ro
+    ports:
+      - "9115:9115"
+    networks:
+      - monitoring
+
+  # =========================================
+  # NGINX - Reverse Proxy pour Monitoring
+  # =========================================
+  nginx:
+    image: nginx:alpine
+    container_name: monitoring-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - monitoring
+    depends_on:
+      - grafana
+      - prometheus

@@ -1,0 +1,212 @@
+global:
+  resolve_timeout: 5m
+  smtp_from: 'monitoring@simveb-bj.com'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_auth_username: '${SMTP_USER}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+# Templates
+templates:
+  - '/etc/alertmanager/*.tmpl'
+
+# Route tree
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'cluster', 'service', 'env']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 4h
+      continue: true
+
+    # Production alerts
+    - match:
+        env: production
+      receiver: 'production-alerts'
+      group_wait: 30s
+      repeat_interval: 6h
+      continue: false
+
+    # Staging alerts
+    - match:
+        env: staging
+      receiver: 'staging-alerts'
+      group_wait: 1m
+      repeat_interval: 12h
+
+    # Database alerts
+    - match:
+        category: database
+      receiver: 'database-alerts'
+      repeat_interval: 8h
+
+    # SSL alerts
+    - match:
+        category: ssl
+      receiver: 'ssl-alerts'
+      repeat_interval: 24h
+
+# Inhibition rules
+inhibit_rules:
+  # Inhiber les alertes non-critiques si une alerte critique existe
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+  # Inhiber les alertes de service si la VM est down
+  - source_match:
+      alertname: 'VMDown'
+    target_match_re:
+      category: '(application|docker|database)'
+    equal: ['instance']
+
+# Receivers
+receivers:
+  # Default receiver
+  - name: 'default'
+    email_configs:
+      - to: 'devops@simveb-bj.com'
+        headers:
+          Subject: '[SIMVEB Monitoring] {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>Alert: {{ .GroupLabels.alertname }}</h2>
+          <ul>
+          {{ range .Alerts }}
+            <li><b>{{ .Labels.instance }}</b>: {{ .Annotations.description }}</li>
+          {{ end }}
+          </ul>
+
+  # Critical alerts - Multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'devops@simveb-bj.com,tech-lead@simveb-bj.com,cto@simveb-bj.com'
+        headers:
+          Subject: '🚨 [CRITICAL] {{ .GroupLabels.alertname }} - SIMVEB'
+        html: |
+          <h1 style="color: red;">🚨 CRITICAL ALERT</h1>
+          <h2>{{ .GroupLabels.alertname }}</h2>
+          <p><b>Environment:</b> {{ .GroupLabels.env }}</p>
+          <p><b>Started:</b> {{ .StartsAt }}</p>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <b>{{ .Labels.instance }}</b><br>
+              {{ .Annotations.description }}<br>
+              <i>{{ .Annotations.summary }}</i>
+            </li>
+          {{ end }}
+          </ul>
+
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          *Environment:* {{ .GroupLabels.env }}
+          *Severity:* {{ .GroupLabels.severity }}
+          {{ range .Alerts }}
+          *Instance:* {{ .Labels.instance }}
+          *Description:* {{ .Annotations.description }}
+          {{ end }}
+        color: danger
+        send_resolved: true
+
+  # Production alerts
+  - name: 'production-alerts'
+    email_configs:
+      - to: 'devops@simveb-bj.com,tech-lead@simveb-bj.com'
+        headers:
+          Subject: '⚠️ [PRODUCTION] {{ .GroupLabels.alertname }} - SIMVEB'
+        html: |
+          <h2 style="color: orange;">⚠️ PRODUCTION ALERT</h2>
+          <h3>{{ .GroupLabels.alertname }}</h3>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <b>{{ .Labels.instance }}</b><br>
+              {{ .Annotations.description }}
+            </li>
+          {{ end }}
+          </ul>
+
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts-production'
+        title: '⚠️ Production: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: warning
+        send_resolved: true
+
+  # Staging alerts
+  - name: 'staging-alerts'
+    email_configs:
+      - to: 'devops@simveb-bj.com'
+        headers:
+          Subject: 'ℹ️ [STAGING] {{ .GroupLabels.alertname }} - SIMVEB'
+
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts-staging'
+        title: 'ℹ️ Staging: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  # Database alerts
+  - name: 'database-alerts'
+    email_configs:
+      - to: 'devops@simveb-bj.com,dba@simveb-bj.com'
+        headers:
+          Subject: '🗄️ [DATABASE] {{ .GroupLabels.alertname }} - SIMVEB'
+        html: |
+          <h2>🗄️ DATABASE ALERT</h2>
+          <h3>{{ .GroupLabels.alertname }}</h3>
+          <p><b>Database:</b> {{ .GroupLabels.db }}</p>
+          <ul>
+          {{ range .Alerts }}
+            <li>{{ .Annotations.description }}</li>
+          {{ end }}
+          </ul>
+
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts-database'
+        title: '🗄️ Database: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: '#0066cc'
+        send_resolved: true
+
+  # SSL alerts
+  - name: 'ssl-alerts'
+    email_configs:
+      - to: 'devops@simveb-bj.com,security@simveb-bj.com'
+        headers:
+          Subject: '🔒 [SSL] {{ .GroupLabels.alertname }} - SIMVEB'
+        html: |
+          <h2>🔒 SSL CERTIFICATE ALERT</h2>
+          <ul>
+          {{ range .Alerts }}
+            <li>
+              <b>{{ .Labels.instance }}</b><br>
+              {{ .Annotations.description }}
+            </li>
+          {{ end }}
+          </ul>
+          <p><i>Please renew certificates before expiration!</i></p>
+
+    slack_configs:
+      - api_url: '${SLACK_WEBHOOK_URL}'
+        channel: '#alerts-security'
+        title: '🔒 SSL: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        color: '#ff9900'
+        send_resolved: true
