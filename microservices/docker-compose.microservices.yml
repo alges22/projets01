@@ -1,0 +1,573 @@
+version: '3.8'
+
+# ========================================
+# SIMVEB - Architecture Microservices
+# Docker Compose Configuration
+# ========================================
+
+networks:
+  simveb-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+
+services:
+  # =========================================
+  # API GATEWAY - Kong
+  # =========================================
+  api-gateway:
+    image: kong:3.4-alpine
+    container_name: simveb-api-gateway
+    restart: unless-stopped
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: postgres
+      KONG_PG_PORT: 5432
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PG_DATABASE: kong_db
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_ADMIN_GUI_URL: http://localhost:8002
+    ports:
+      - "8000:8000"   # Proxy HTTP
+      - "8443:8443"   # Proxy HTTPS
+      - "8001:8001"   # Admin API
+      - "8444:8444"   # Admin API HTTPS
+      - "8002:8002"   # Kong Manager
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  # Kong Migration Bootstrap
+  kong-migration:
+    image: kong:3.4-alpine
+    container_name: kong-migration
+    command: kong migrations bootstrap
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: postgres
+      KONG_PG_PORT: 5432
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong_password
+      KONG_PG_DATABASE: kong_db
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+    restart: on-failure
+
+  # =========================================
+  # MICROSERVICES
+  # =========================================
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: simveb-auth-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Auth Service"
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_PORT: 8001
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: auth_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PORT: 6379
+
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+    ports:
+      - "8001:8001"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # User Service
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: simveb-user-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB User Service"
+      APP_ENV: production
+      APP_PORT: 8002
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: user_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # Service Communication
+      AUTH_SERVICE_URL: http://auth-service:8001
+    ports:
+      - "8002:8002"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+      - auth-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Vehicle Service
+  vehicle-service:
+    build:
+      context: ./services/vehicle-service
+      dockerfile: Dockerfile
+    container_name: simveb-vehicle-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Vehicle Service"
+      APP_ENV: production
+      APP_PORT: 8003
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: vehicle_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "8003:8003"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Immatriculation Service
+  immat-service:
+    build:
+      context: ./services/immat-service
+      dockerfile: Dockerfile
+    container_name: simveb-immat-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Immatriculation Service"
+      APP_ENV: production
+      APP_PORT: 8004
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: immat_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: simveb
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+      # Service Communication
+      VEHICLE_SERVICE_URL: http://vehicle-service:8003
+      USER_SERVICE_URL: http://user-service:8002
+      PAYMENT_SERVICE_URL: http://payment-service:8005
+      DOCUMENT_SERVICE_URL: http://document-service:8006
+    ports:
+      - "8004:8004"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+      - vehicle-service
+      - user-service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: simveb-payment-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Payment Service"
+      APP_ENV: production
+      APP_PORT: 8005
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: payment_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # Payment Gateways
+      FEDAPAY_PUBLIC_KEY: ${FEDAPAY_PUBLIC_KEY}
+      FEDAPAY_SECRET_KEY: ${FEDAPAY_SECRET_KEY}
+      FEDAPAY_ENVIRONMENT: live
+
+      KKIAPAY_PRIVATE_KEY: ${KKIAPAY_PRIVATE_KEY}
+      KKIAPAY_PUBLIC_KEY: ${KKIAPAY_PUBLIC_KEY}
+      KKIAPAY_SECRET: ${KKIAPAY_SECRET}
+      KKIAPAY_SANDBOX: false
+    ports:
+      - "8005:8005"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Document Service
+  document-service:
+    build:
+      context: ./services/document-service
+      dockerfile: Dockerfile
+    container_name: simveb-document-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Document Service"
+      APP_ENV: production
+      APP_PORT: 8006
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: document_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # File Storage
+      FILESYSTEM_DISK: s3
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_BUCKET: ${AWS_BUCKET}
+    ports:
+      - "8006:8006"
+    volumes:
+      - ./storage/documents:/app/storage/documents
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    container_name: simveb-notification-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Notification Service"
+      APP_ENV: production
+      APP_PORT: 8007
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: notification_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: simveb
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+
+      QUEUE_CONNECTION: rabbitmq
+
+      # SMTP
+      MAIL_MAILER: smtp
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM_ADDRESS: notifications@simveb-bj.com
+
+      # SMS Provider
+      SMS_PROVIDER: ${SMS_PROVIDER}
+      SMS_API_KEY: ${SMS_API_KEY}
+    ports:
+      - "8007:8007"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Integration Service
+  integration-service:
+    build:
+      context: ./services/integration-service
+      dockerfile: Dockerfile
+    container_name: simveb-integration-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Integration Service"
+      APP_ENV: production
+      APP_PORT: 8008
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: integration_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # ANIP Integration
+      ANIP_URL: ${ANIP_URL}
+      ANIP_CLIENT_ID: ${ANIP_CLIENT_ID}
+      ANIP_CLIENT_SECRET: ${ANIP_CLIENT_SECRET}
+
+      # DGI Integration
+      DGI_URL: ${DGI_URL}
+      DGI_API_KEY: ${DGI_API_KEY}
+    ports:
+      - "8008:8008"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Config Service
+  config-service:
+    build:
+      context: ./services/config-service
+      dockerfile: Dockerfile
+    container_name: simveb-config-service
+    restart: unless-stopped
+    environment:
+      APP_NAME: "SIMVEB Config Service"
+      APP_ENV: production
+      APP_PORT: 8009
+
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_DATABASE: config_db
+      DB_USERNAME: simveb
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      CACHE_DRIVER: redis
+    ports:
+      - "8009:8009"
+    networks:
+      - simveb-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =========================================
+  # INFRASTRUCTURE SERVICES
+  # =========================================
+
+  # PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: simveb-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: simveb
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_MULTIPLE_DATABASES: >-
+        kong_db,
+        auth_db,
+        user_db,
+        vehicle_db,
+        immat_db,
+        payment_db,
+        document_db,
+        notification_db,
+        integration_db,
+        config_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - simveb-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simveb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: simveb-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - simveb-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: simveb-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: simveb
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - simveb-network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =========================================
+  # FRONTENDS (Optional - can run separately)
+  # =========================================
+
+  # Portal (Nuxt 3)
+  portal:
+    build:
+      context: ./simveb-portal-design-develop
+      dockerfile: Dockerfile
+    container_name: simveb-portal
+    restart: unless-stopped
+    environment:
+      NUXT_PUBLIC_API_URL: http://api-gateway:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - simveb-network
+    depends_on:
+      - api-gateway
+
+  # Backoffice (Vue 3)
+  backoffice:
+    build:
+      context: ./simveb-backoffice-develop
+      dockerfile: Dockerfile
+    container_name: simveb-backoffice
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://api-gateway:8000
+    ports:
+      - "3001:80"
+    networks:
+      - simveb-network
+    depends_on:
+      - api-gateway
+
+  # Affiliate (Vue 3)
+  affiliate:
+    build:
+      context: ./simveb-affiliate-develop
+      dockerfile: Dockerfile
+    container_name: simveb-affiliate
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://api-gateway:8000
+    ports:
+      - "3002:80"
+    networks:
+      - simveb-network
+    depends_on:
+      - api-gateway
